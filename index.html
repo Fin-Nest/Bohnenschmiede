@@ -257,5 +257,93 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/supabase.js"></script>
   <script src="assets/js/app.js"></script>
+  <!-- DETAIL & EDIT MODAL OVERLAY -->
+  <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="frosted-glass bg-white/95 max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-lab-border shadow-2xl p-5 space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-start border-b border-lab-border pb-3">
+        <div>
+          <span id="modal-roaster" class="text-xs font-mono uppercase tracking-wider text-slate-400 block">Röster</span>
+          <h2 id="modal-bean-name" class="text-lg font-bold text-slate-900 leading-tight">Bohnen Name</h2>
+        </div>
+        <button id="modal-close-btn" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <!-- Modal Formular (In-Place Edit) -->
+      <form id="edit-bean-form" class="space-y-4">
+        <input type="hidden" id="edit-config-id">
+
+        <!-- Status & Bewertung -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Status</label>
+            <select id="edit-status" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+              <option value="inventory">📦 Im Bestand</option>
+              <option value="wishlist">📋 Wunschliste</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Score (1-10)</label>
+            <input type="text" id="edit-score" placeholder="9,5" 
+                   class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+          </div>
+        </div>
+
+        <!-- DUAL DIAL-IN PARAMETER LOGIC -->
+        <div class="space-y-3 pt-2">
+          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Extraction Protocol</h3>
+
+          <!-- Single Shot -->
+          <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
+            <span class="text-xs font-mono font-semibold text-slate-600 block">Single Shot (8,0g In)</span>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400">Mahlgrad</label>
+                <input type="text" id="edit-single-grind" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400">Yield (g)</label>
+                <input type="text" id="edit-single-yield" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400">Zeit (s)</label>
+                <input type="text" id="edit-single-time" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
+              </div>
+            </div>
+          </div>
+
+          <!-- Double Shot -->
+          <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
+            <span class="text-xs font-mono font-semibold text-slate-600 block">Double Shot (18,0g In)</span>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400">Mahlgrad</label>
+                <input type="text" id="edit-double-grind" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400">Yield (g)</label>
+                <input type="text" id="edit-double-yield" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400">Zeit (s)</label>
+                <input type="text" id="edit-double-time" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-2 pt-3 border-t border-lab-border">
+          <button type="button" id="btn-delete-bean" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-mono font-semibold hover:bg-red-100 transition">
+            Löschen
+          </button>
+          <button type="submit" class="flex-1 bg-slate-900 text-white text-xs font-mono py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
+            Änderungen Speichern
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
