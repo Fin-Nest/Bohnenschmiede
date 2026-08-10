@@ -17,10 +17,10 @@
   <!-- Supabase JS Client library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- imgly Background Removal JS (Client-side KI) -->
+  <!-- imgly Background Removal JS (Benannter Import statt Default) -->
   <script type="module">
-    import imglyRemoveBackground from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm';
-    window.imglyRemoveBackground = imglyRemoveBackground;
+    import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm';
+    window.imglyRemoveBackground = removeBackground;
   </script>
 
   <!-- Fonts: JetBrains Mono für Präzisionswerte -->
