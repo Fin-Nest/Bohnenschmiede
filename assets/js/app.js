@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initImageUploadHandler();
   initSearchAndFilter();
   initModalEvents();
+  initSetupTab();
   loadAndRenderBeans();
 });
 
@@ -504,4 +505,16 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Initialisiert die Funktionen im Setup-Tab (z.B. CSV-Export)
+ */
+function initSetupTab() {
+  const exportBtn = document.getElementById('btn-export-csv');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      exportBeansToCSV(userBeansData);
+    });
+  }
 }
