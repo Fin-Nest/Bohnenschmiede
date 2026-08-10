@@ -4,7 +4,7 @@
 
 // Ersetze diese beiden Werte mit deinen Daten aus dem Supabase Dashboard:
 const SUPABASE_URL = https://vlkovdijnyllqhfpbosv.supabase.co; 
-const SUPABASE_PUBLISHABLE_KEY = 'sbp_dein_publishable_key_hier...'; 
+const SUPABASE_PUBLISHABLE_KEY = sb_publishable_Bsm5tsPl3xTvwEAYotW35A_ppzRwVd5; 
 
 // Client-Initialisierung mit dem Publishable Key
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
