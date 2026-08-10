@@ -122,6 +122,9 @@ function initSearchAndFilter() {
 /**
  * Formular-Event-Listener für "Neue Bohne"
  */
+/**
+ * Formular-Event-Listener für "Neue Bohne"
+ */
 function initAddBeanForm() {
   const form = document.getElementById('add-bean-form');
   const submitBtn = document.getElementById('btn-submit-bean');
@@ -159,6 +162,11 @@ function initAddBeanForm() {
         form.reset();
         processedImageFile = null;
         document.getElementById('image-preview-container').classList.add('hidden');
+        
+        // 1. Frische Daten aus Supabase laden und Array aktualisieren
+        await loadAndRenderBeans();
+        
+        // 2. Erst danach zurück zum Dashboard wechseln
         document.querySelector('[data-tab="dashboard"]').click();
       } else {
         alert('Fehler beim Speichern: ' + result.error);
