@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
 /**
  * Steuerung der Bottom Navigation Bar (Tabs)
  */
+/**
+ * Steuerung der Bottom Navigation Bar (Tabs)
+ */
 function initTabNavigation() {
   const navButtons = document.querySelectorAll('.nav-btn');
   const sections = {
@@ -29,7 +32,7 @@ function initTabNavigation() {
   };
 
   navButtons.forEach(button => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const targetTab = button.getAttribute('data-tab');
 
       Object.values(sections).forEach(section => {
@@ -48,13 +51,13 @@ function initTabNavigation() {
       button.classList.remove('text-slate-500');
       button.classList.add('text-slate-900', 'font-semibold');
 
+      // Beim Wechsel auf Dashboard oder Wunschliste Daten frisch aus Supabase laden
       if (targetTab === 'dashboard' || targetTab === 'wishlist') {
-        filterAndRenderBeans();
+        await loadAndRenderBeans();
       }
     });
   });
 }
-
 /**
  * Foto-Upload & Client-side KI-Hintergrundentfernung
  */
