@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSearchAndFilter();
   initModalEvents();
   initSetupTab();
+  registerServiceWorker();
   loadAndRenderBeans();
 });
 
@@ -515,6 +516,23 @@ function initSetupTab() {
   if (exportBtn) {
     exportBtn.addEventListener('click', () => {
       exportBeansToCSV(userBeansData);
+    });
+  }
+}
+
+/**
+ * Registriert den Service Worker für PWA- und Offline-Funktionalität
+ */
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker erfolgreich registriert Scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.error('[PWA] Service Worker Registrierung fehlgeschlagen:', err);
+        });
     });
   }
 }
