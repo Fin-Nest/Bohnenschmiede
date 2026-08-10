@@ -129,3 +129,48 @@ async function togglePinStatus(configId, newPinnedState) {
     return { success: false, error: error.message };
   }
 }
+/**
+ * Aktualisiert eine bestehende Bohnen-Konfiguration in Supabase.
+ */
+async function updateUserBeanConfig(configId, updatedData) {
+  try {
+    const { data, error } = await supabase
+      .from('user_bean_configs')
+      .update({
+        status: updatedData.status,
+        personal_score: parseFlexibleNumber(updatedData.personalScore),
+        single_grind_size: parseFlexibleNumber(updatedData.singleGrind),
+        single_yield_out: parseFlexibleNumber(updatedData.singleYield),
+        single_time_sec: parseFlexibleNumber(updatedData.singleTime),
+        double_grind_size: parseFlexibleNumber(updatedData.doubleGrind),
+        double_yield_out: parseFlexibleNumber(updatedData.doubleYield),
+        double_time_sec: parseFlexibleNumber(updatedData.doubleTime)
+      })
+      .eq('id', configId)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Konfiguration:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Löscht eine Bohnen-Konfiguration des Nutzers.
+ */
+async function deleteUserBeanConfig(configId) {
+  try {
+    const { error } = await supabase
+      .from('user_bean_configs')
+      .delete()
+      .eq('id', configId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Fehler beim Löschen:', error);
+    return { success: false, error: error.message };
+  }
+}
