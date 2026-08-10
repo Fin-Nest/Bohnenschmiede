@@ -2,16 +2,15 @@
  * BOHNENSCHMIEDE - SUPABASE DATABASE CLIENT
  */
 
-// Ersetze diese beiden Werte mit deinen Daten aus dem Supabase Dashboard:
+// 1. Supabase Zugangsdaten
 const SUPABASE_URL = 'https://vlkovdijnyllqhfpbosv.supabase.co'; 
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Bsm5tsPl3xTvwEAYotW35A_ppzRwVd5'; 
 
-// Client-Initialisierung mit dem Publishable Key
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Client-Initialisierung (Variable umbenannt zu supabaseClient, um Namenskonflikte zu vermeiden)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 /**
- * Lädt ein Bild-File oder Blob in den Supabase Storage Bucket 'bean-images' hoch
- * und gibt die öffentliche Bild-URL zurück.
+ * Lädt ein Bild-File oder Blob in den Supabase Storage Bucket 'bean-images' hoch.
  */
 async function uploadBeanImage(fileOrBlob) {
   try {
@@ -19,7 +18,7 @@ async function uploadBeanImage(fileOrBlob) {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `beans/${fileName}`;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseClient.storage
       .from('bean-images')
       .upload(filePath, fileOrBlob, {
         cacheControl: '3600',
@@ -28,7 +27,7 @@ async function uploadBeanImage(fileOrBlob) {
 
     if (error) throw error;
 
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = supabaseClient.storage
       .from('bean-images')
       .getPublicUrl(filePath);
 
@@ -40,34 +39,40 @@ async function uploadBeanImage(fileOrBlob) {
 }
 
 /**
- * Speichert eine neue Bohne inkl. optionalem Foto und User-Konfiguration
+ * Speichert eine neue Bohne inkl. optionalem Foto und User-Konfiguration.
  */
 async function saveBeanToDatabase(formData) {
   try {
     let imageUrl = null;
 
-    // Falls ein Bild übergeben wurde: Zuerst in den Supabase Storage hochladen
     if (formData.imageFile) {
-      imageUrl = await uploadBeanImage(formData.imageFile);
+      try {
+        imageUrl = await uploadBeanImage(formData.imageFile);
+      } catch (imgError) {
+        console.warn('Bildupload fehlgeschlagen, speichere ohne Bild:', imgError);
+      }
     }
 
-    // A) In Tabelle 'beans' (Stammdaten) eintragen
-    const { data: beanData, error: beanError } = await supabase
+    // A) In Tabelle 'beans' eintragen
+    const { data: beanData, error: beanError } = await supabaseClient
       .from('beans')
       .insert([{
         name: formData.name,
         roaster: formData.roaster,
         roast_level: formData.roastLevel,
-        tasting_notes: formData.tastingNotes,
+        tasting_notes: formData.tastingNotes || [],
         image_url: imageUrl
       }])
       .select()
       .single();
 
-    if (beanError) throw beanError;
+    if (beanError) {
+      console.error('Fehler bei Tabelle beans:', beanError);
+      throw new Error(`Fehler beim Anlegen der Bohnen-Stammdaten: ${beanError.message}`);
+    }
 
-    // B) In Tabelle 'user_bean_configs' (Private Parameter & Dial-In) eintragen
-    const { data: configData, error: configError } = await supabase
+    // B) In Tabelle 'user_bean_configs' eintragen
+    const { data: configData, error: configError } = await supabaseClient
       .from('user_bean_configs')
       .insert([{
         bean_id: beanData.id,
@@ -82,7 +87,10 @@ async function saveBeanToDatabase(formData) {
         double_time_sec: parseFlexibleNumber(formData.doubleTime)
       }]);
 
-    if (configError) throw configError;
+    if (configError) {
+      console.error('Fehler bei Tabelle user_bean_configs:', configError);
+      throw new Error(`Fehler beim Speichern deiner Einstellungen: ${configError.message}`);
+    }
 
     return { success: true, bean: beanData };
   } catch (error) {
@@ -90,12 +98,13 @@ async function saveBeanToDatabase(formData) {
     return { success: false, error: error.message };
   }
 }
+
 /**
  * Lädt alle Bohnen und zugehörigen Konfigurationen des Nutzers aus Supabase.
  */
 async function fetchUserBeans() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('user_bean_configs')
       .select(`
         id,
@@ -129,13 +138,11 @@ async function fetchUserBeans() {
 
 /**
  * Ändert den Pin-Status (Pinned / Unpinned) einer Bohne.
- * Prüft vorab, dass maximal 3 Bohnen gleichzeitig angepinnt sein können.
  */
 async function togglePinStatus(configId, newPinnedState) {
   try {
-    // Wenn angepinnt werden soll: Prüfe, wie viele Bohnen bereits angepinnt sind
     if (newPinnedState) {
-      const { data: currentPinned, error: countError } = await supabase
+      const { data: currentPinned, error: countError } = await supabaseClient
         .from('user_bean_configs')
         .select('id')
         .eq('is_pinned', true);
@@ -150,8 +157,7 @@ async function togglePinStatus(configId, newPinnedState) {
       }
     }
 
-    // Status in der Datenbank aktualisieren
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('user_bean_configs')
       .update({ is_pinned: newPinnedState })
       .eq('id', configId)
@@ -164,12 +170,13 @@ async function togglePinStatus(configId, newPinnedState) {
     return { success: false, error: error.message };
   }
 }
+
 /**
  * Aktualisiert eine bestehende Bohnen-Konfiguration in Supabase.
  */
 async function updateUserBeanConfig(configId, updatedData) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('user_bean_configs')
       .update({
         status: updatedData.status,
@@ -197,7 +204,7 @@ async function updateUserBeanConfig(configId, updatedData) {
  */
 async function deleteUserBeanConfig(configId) {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('user_bean_configs')
       .delete()
       .eq('id', configId);
