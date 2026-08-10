@@ -5,12 +5,14 @@
 let userBeansData = [];
 let processedImageFile = null; // Speichert das verarbeitete Bild-File/Blob
 let selectedTastingNotes = []; // Speichert die aktuell aktivierten Tags
+let modalSelectedTastingNotes = []; // Speichert die im Modal gewählten Tags
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
   initAddBeanForm();
   initImageUploadHandler();
   initTastingNotesHandler();
+  initModalTastingNotesHandler(); // ⬅️ Aktiviert Klicks auf die Modal-Tags
   initSearchAndFilter();
   initModalEvents();
   initSetupTab();
@@ -130,13 +132,11 @@ function initAddBeanForm() {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Speichere Bohne...';
 
-      // Manuell eingegebene Notizen im Moment des Klicks auslesen
       const customNotesInput = document.getElementById('bean-custom-notes') ? document.getElementById('bean-custom-notes').value : '';
       const customNotesArray = customNotesInput
         ? customNotesInput.split(',').map(n => n.trim()).filter(n => n.length > 0)
         : [];
 
-      // Vordefinierte Tags (aus globalem Array) + Freitext zusammenführen & Duplikate entfernen
       const allTastingNotes = [...new Set([...selectedTastingNotes, ...customNotesArray])];
 
       const formData = {
@@ -456,6 +456,15 @@ function initModalEvents() {
       e.preventDefault();
       const configId = document.getElementById('edit-config-id').value;
 
+      const customNotesInput = document.getElementById('edit-custom-notes') ? document.getElementById('edit-custom-notes').value : '';
+      const customNotesArray = customNotesInput
+        ? customNotesInput.split(',').map(n => n.trim()).filter(n => n.length > 0)
+        : [];
+
+      const updatedTastingNotes = [...new Set([...modalSelectedTastingNotes, ...customNotesArray])];
+
+      const item = userBeansData.find(b => b.id === configId);
+
       const updatedData = {
         status: document.getElementById('edit-status').value,
         personalScore: document.getElementById('edit-score').value,
@@ -469,9 +478,13 @@ function initModalEvents() {
 
       const result = await updateUserBeanConfig(configId, updatedData);
 
+      if (result.success && item && item.beans) {
+        await updateBeanMasterData(item.beans.id, { tastingNotes: updatedTastingNotes });
+      }
+
       if (result.success) {
         modal.classList.add('hidden');
-        loadAndRenderBeans();
+        await loadAndRenderBeans();
       } else {
         alert('Fehler beim Aktualisieren: ' + result.error);
       }
@@ -495,13 +508,13 @@ function initModalEvents() {
 }
 
 /**
- * Öffnet das Modal
+ * Öffnet das Modal und befüllt alle Felder inkl. Tasting Notes
  */
 function openDetailModal(configId) {
   const item = userBeansData.find(b => b.id === configId);
   if (!item) return;
 
-  const bean = item.beans;
+  const bean = item.beans || {};
   const modal = document.getElementById('detail-modal');
 
   document.getElementById('edit-config-id').value = item.id;
@@ -510,6 +523,38 @@ function openDetailModal(configId) {
   
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
+
+  // --- TASTING NOTES IM MODAL BEFÜLLEN ---
+  const existingNotes = bean.tasting_notes || [];
+  modalSelectedTastingNotes = [];
+
+  const presetTags = ['Schokolade', 'Nuss', 'Beere', 'Zitrus', 'Steinobst', 'Blumig', 'Karamell'];
+  const customNotes = [];
+
+  const tagButtons = document.querySelectorAll('#modal-tasting-tags-preset .modal-tag-btn');
+  
+  tagButtons.forEach(btn => {
+    const tagValue = btn.getAttribute('data-tag');
+    if (existingNotes.includes(tagValue)) {
+      modalSelectedTastingNotes.push(tagValue);
+      btn.classList.remove('bg-white', 'text-slate-600', 'border-lab-border');
+      btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+    } else {
+      btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+      btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
+    }
+  });
+
+  existingNotes.forEach(note => {
+    if (!presetTags.includes(note)) {
+      customNotes.push(note);
+    }
+  });
+
+  const customNotesEl = document.getElementById('edit-custom-notes');
+  if (customNotesEl) {
+    customNotesEl.value = customNotes.join(', ');
+  }
 
   document.getElementById('edit-single-grind').value = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '';
   document.getElementById('edit-single-yield').value = item.single_yield_out ? formatNumberDisplay(item.single_yield_out, 1) : '';
@@ -602,6 +647,29 @@ function initTastingNotesHandler() {
         btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
       } else {
         selectedTastingNotes.push(tagValue);
+        btn.classList.remove('bg-white', 'text-slate-600', 'border-lab-border');
+        btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+      }
+    });
+  });
+}
+
+/**
+ * Steuert das An- und Abwählen der Tasting-Notes im Edit-Modal
+ */
+function initModalTastingNotesHandler() {
+  const tagButtons = document.querySelectorAll('#modal-tasting-tags-preset .modal-tag-btn');
+
+  tagButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tagValue = btn.getAttribute('data-tag');
+
+      if (modalSelectedTastingNotes.includes(tagValue)) {
+        modalSelectedTastingNotes = modalSelectedTastingNotes.filter(t => t !== tagValue);
+        btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+        btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
+      } else {
+        modalSelectedTastingNotes.push(tagValue);
         btn.classList.remove('bg-white', 'text-slate-600', 'border-lab-border');
         btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
       }
