@@ -10,10 +10,47 @@ const SUPABASE_PUBLISHABLE_KEY = 'sbp_dein_publishable_key_hier...';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 /**
- * Speichert eine neue Bohne und die zugehörigen User-Parameter
+ * Lädt ein Bild-File oder Blob in den Supabase Storage Bucket 'bean-images' hoch
+ * und gibt die öffentliche Bild-URL zurück.
+ */
+async function uploadBeanImage(fileOrBlob) {
+  try {
+    const fileExt = fileOrBlob.name ? fileOrBlob.name.split('.').pop() : 'png';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `beans/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('bean-images')
+      .upload(filePath, fileOrBlob, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = supabase.storage
+      .from('bean-images')
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
+  } catch (error) {
+    console.error('Fehler beim Upload des Bildes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Speichert eine neue Bohne inkl. optionalem Foto und User-Konfiguration
  */
 async function saveBeanToDatabase(formData) {
   try {
+    let imageUrl = null;
+
+    // Falls ein Bild übergeben wurde: Zuerst in den Supabase Storage hochladen
+    if (formData.imageFile) {
+      imageUrl = await uploadBeanImage(formData.imageFile);
+    }
+
     // A) In Tabelle 'beans' (Stammdaten) eintragen
     const { data: beanData, error: beanError } = await supabase
       .from('beans')
@@ -21,7 +58,8 @@ async function saveBeanToDatabase(formData) {
         name: formData.name,
         roaster: formData.roaster,
         roast_level: formData.roastLevel,
-        tasting_notes: formData.tastingNotes
+        tasting_notes: formData.tastingNotes,
+        image_url: imageUrl
       }])
       .select()
       .single();
@@ -29,19 +67,16 @@ async function saveBeanToDatabase(formData) {
     if (beanError) throw beanError;
 
     // B) In Tabelle 'user_bean_configs' (Private Parameter & Dial-In) eintragen
-    // Wichtig: Hier greift parseFlexibleNumber für Komma/Punkt
     const { data: configData, error: configError } = await supabase
       .from('user_bean_configs')
       .insert([{
         bean_id: beanData.id,
-        status: formData.status, // 'inventory' oder 'wishlist'
+        status: formData.status,
         
-        // Single Shot Parameter (DF64)
         single_grind_size: parseFlexibleNumber(formData.singleGrind),
         single_yield_out: parseFlexibleNumber(formData.singleYield),
         single_time_sec: parseFlexibleNumber(formData.singleTime),
         
-        // Double Shot Parameter (DF64)
         double_grind_size: parseFlexibleNumber(formData.doubleGrind),
         double_yield_out: parseFlexibleNumber(formData.doubleYield),
         double_time_sec: parseFlexibleNumber(formData.doubleTime)
