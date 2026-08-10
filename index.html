@@ -321,6 +321,23 @@
             <input type="text" id="edit-score" placeholder="9,5" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
           </div>
         </div>
+        <!-- NEU: TASTING NOTES IN-PLACE EDITING -->
+        <div class="pt-2 border-t border-lab-border">
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Tasting Notes Bearbeiten</label>
+          
+          <div id="modal-tasting-tags-preset" class="flex flex-wrap gap-1.5 mb-2">
+            <button type="button" data-tag="Schokolade" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍫 Schokolade</button>
+            <button type="button" data-tag="Nuss" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌰 Nuss</button>
+            <button type="button" data-tag="Beere" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🫐 Beere</button>
+            <button type="button" data-tag="Zitrus" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍋 Zitrus</button>
+            <button type="button" data-tag="Steinobst" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍑 Steinobst</button>
+            <button type="button" data-tag="Blumig" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌸 Blumig</button>
+            <button type="button" data-tag="Karamell" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍯 Karamell</button>
+          </div>
+
+          <input type="text" id="edit-custom-notes" placeholder="Weitere Noten (kommagetrennt)" 
+                 class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-900">
+        </div>
 
         <div class="space-y-3 pt-2">
           <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Extraction Protocol</h3>
