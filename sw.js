@@ -2,23 +2,20 @@
  * BOHNENSCHMIEDE - SERVICE WORKER (OFFLINE CACHING)
  */
 
-const CACHE_NAME = 'bohnenschmiede-v1';
+const CACHE_NAME = 'bohnenschmiede-v2';
 
-// Statische Ressourcen, die für die Offline-Nutzung lokal zwischengespeichert werden
+// Nur lokale App-Shell-Dateien zwischenspeichern
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './assets/js/utils.js',
   './assets/js/supabase.js',
-  './assets/js/app.js',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap'
+  './assets/js/app.js'
 ];
 
 /**
- * 1. Install Event: Cache öffnen und App-Shell-Ressourcen speichern
+ * 1. Install Event: Lokale App-Shell im Cache speichern
  */
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -31,7 +28,7 @@ self.addEventListener('install', (event) => {
 });
 
 /**
- * 2. Activate Event: Alte Caches aufräumen bei Versions-Updates
+ * 2. Activate Event: Alte Caches aufräumen
  */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -50,22 +47,18 @@ self.addEventListener('activate', (event) => {
 });
 
 /**
- * 3. Fetch Event: Anfragen abfangen (Cache-First Strategie für App Shell)
+ * 3. Fetch Event: Anfragen aus dem Cache bedienen
  */
 self.addEventListener('fetch', (event) => {
-  // Nur GET-Anfragen zwischenspeichern (keine POST/PUT-Requests an Supabase)
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Wenn Datei im Cache vorhanden ist: Aus dem Cache liefern
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Sonst über das Netzwerk laden
       return fetch(event.request).catch(() => {
-        // Fallback bei Verbindungsabbruch beim Navigieren
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
         }
