@@ -2,15 +2,15 @@
  * BOHNENSCHMIEDE - SUPABASE DATABASE CLIENT
  */
 
-// 1. Supabase Zugangsdaten
+// 1. Supabase Zugangsdaten als saubere Strings
 const SUPABASE_URL = 'https://vlkovdijnyllqhfpbosv.supabase.co'; 
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Bsm5tsPl3xTvwEAYotW35A_ppzRwVd5'; 
 
-// Client-Initialisierung (Variable umbenannt zu supabaseClient, um Namenskonflikte zu vermeiden)
+// 2. Client-Initialisierung (Variable heißt 'supabaseClient', um Konflikte mit window.supabase zu vermeiden)
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 /**
- * Lädt ein Bild-File oder Blob in den Supabase Storage Bucket 'bean-images' hoch.
+ * Lädt ein Bild-File oder Blob in den Supabase Storage Bucket 'bean-images' hoch
  */
 async function uploadBeanImage(fileOrBlob) {
   try {
@@ -39,7 +39,7 @@ async function uploadBeanImage(fileOrBlob) {
 }
 
 /**
- * Speichert eine neue Bohne inkl. optionalem Foto und User-Konfiguration.
+ * Speichert eine neue Bohne inkl. optionalem Foto und User-Konfiguration
  */
 async function saveBeanToDatabase(formData) {
   try {
@@ -100,7 +100,7 @@ async function saveBeanToDatabase(formData) {
 }
 
 /**
- * Lädt alle Bohnen und zugehörigen Konfigurationen des Nutzers aus Supabase.
+ * Lädt alle Bohnen und zugehörigen Konfigurationen des Nutzers aus Supabase
  */
 async function fetchUserBeans() {
   try {
@@ -137,7 +137,7 @@ async function fetchUserBeans() {
 }
 
 /**
- * Ändert den Pin-Status (Pinned / Unpinned) einer Bohne.
+ * Ändert den Pin-Status (Pinned / Unpinned) einer Bohne
  */
 async function togglePinStatus(configId, newPinnedState) {
   try {
@@ -172,7 +172,7 @@ async function togglePinStatus(configId, newPinnedState) {
 }
 
 /**
- * Aktualisiert eine bestehende Bohnen-Konfiguration in Supabase.
+ * Aktualisiert eine bestehende Bohnen-Konfiguration in Supabase
  */
 async function updateUserBeanConfig(configId, updatedData) {
   try {
@@ -200,7 +200,7 @@ async function updateUserBeanConfig(configId, updatedData) {
 }
 
 /**
- * Löscht eine Bohnen-Konfiguration des Nutzers.
+ * Löscht eine Bohnen-Konfiguration des Nutzers
  */
 async function deleteUserBeanConfig(configId) {
   try {
