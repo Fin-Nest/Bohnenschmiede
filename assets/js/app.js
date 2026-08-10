@@ -3,10 +3,12 @@
  */
 
 let userBeansData = [];
+let processedImageFile = null; // Speichert das verarbeitete Bild-File/Blob
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
   initAddBeanForm();
+  initImageUploadHandler();
   initSearchAndFilter();
   initModalEvents();
   loadAndRenderBeans();
@@ -52,6 +54,52 @@ function initTabNavigation() {
 }
 
 /**
+ * Foto-Upload & Client-side KI-Hintergrundentfernung
+ */
+function initImageUploadHandler() {
+  const fileInput = document.getElementById('bean-image-input');
+  const bgToggle = document.getElementById('toggle-bg-removal');
+  const previewContainer = document.getElementById('image-preview-container');
+  const previewImg = document.getElementById('image-preview');
+  const spinner = document.getElementById('image-loading-spinner');
+
+  if (!fileInput) return;
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      processedImageFile = null;
+      previewContainer.classList.add('hidden');
+      return;
+    }
+
+    previewContainer.classList.remove('hidden');
+
+    // Wenn der KI-Toggle aktiviert ist und die KI-Bibliothek geladen wurde:
+    if (bgToggle.checked && window.imglyRemoveBackground) {
+      spinner.classList.remove('hidden');
+      try {
+        // KI entfernt den Hintergrund direkt clientseitig im Browser WebAssembly
+        const blob = await window.imglyRemoveBackground(file);
+        processedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
+        previewImg.src = URL.createObjectURL(processedImageFile);
+      } catch (err) {
+        console.error('KI Freistellen fehlgeschlagen, nutze Originalbild:', err);
+        alert('KI-Hintergrundentfernung fehlgeschlagen. Es wird das Originalfoto verwendet.');
+        processedImageFile = file;
+        previewImg.src = URL.createObjectURL(file);
+      } finally {
+        spinner.classList.add('hidden');
+      }
+    } else {
+      // Keine KI-Verarbeitung -> Originalbild verwenden
+      processedImageFile = file;
+      previewImg.src = URL.createObjectURL(file);
+    }
+  });
+}
+
+/**
  * Live-Suche & Sortier-Event-Listener
  */
 function initSearchAndFilter() {
@@ -71,16 +119,21 @@ function initSearchAndFilter() {
  */
 function initAddBeanForm() {
   const form = document.getElementById('add-bean-form');
+  const submitBtn = document.getElementById('btn-submit-bean');
   
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Speichere Bohne...';
 
       const formData = {
         status: form.querySelector('input[name="status"]:checked').value,
         name: document.getElementById('bean-name').value,
         roaster: document.getElementById('bean-roaster').value,
         roastLevel: document.getElementById('bean-roast').value,
+        imageFile: processedImageFile,
         
         singleGrind: document.getElementById('single-grind').value,
         singleYield: document.getElementById('single-yield').value,
@@ -93,9 +146,14 @@ function initAddBeanForm() {
 
       const result = await saveBeanToDatabase(formData);
       
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Bohne Speichern';
+
       if (result.success) {
         alert('Bohne erfolgreich gespeichert!');
         form.reset();
+        processedImageFile = null;
+        document.getElementById('image-preview-container').classList.add('hidden');
         document.querySelector('[data-tab="dashboard"]').click();
       } else {
         alert('Fehler beim Speichern: ' + result.error);
@@ -120,7 +178,7 @@ async function loadAndRenderBeans() {
 }
 
 /**
- * Wendet Suchbegriffe & Sortierung an und schickt die Daten an die Render-Funktionen
+ * Wendet Suchbegriffe & Sortierung an
  */
 function filterAndRenderBeans() {
   const searchInput = document.getElementById('search-input');
@@ -129,7 +187,6 @@ function filterAndRenderBeans() {
   const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
   const sortBy = sortSelect ? sortSelect.value : 'recent';
 
-  // 1. Filtern nach Suchbegriff (Name, Röster, Tasting Notes)
   let filtered = userBeansData.filter(item => {
     const bean = item.beans;
     if (!bean) return false;
@@ -141,7 +198,6 @@ function filterAndRenderBeans() {
     return nameMatch || roasterMatch || notesMatch;
   });
 
-  // 2. Sortierung anwenden
   filtered.sort((a, b) => {
     if (sortBy === 'name') {
       return (a.beans?.name || '').localeCompare(b.beans?.name || '');
@@ -150,11 +206,9 @@ function filterAndRenderBeans() {
     } else if (sortBy === 'grind') {
       return (a.double_grind_size || 0) - (b.double_grind_size || 0);
     }
-    // Default: 'recent'
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
 
-  // 3. Aufteilen & Rendern
   const pinnedBeans = filtered.filter(item => item.is_pinned);
   const inventoryBeans = filtered.filter(item => item.status === 'inventory');
   const wishlistBeans = filtered.filter(item => item.status === 'wishlist');
@@ -165,7 +219,7 @@ function filterAndRenderBeans() {
 }
 
 /**
- * Rendert Hero-Kacheln (Angepinnt)
+ * Rendert Hero-Kacheln (Angepinnt) inkl. Packungsfoto
  */
 function renderPinnedBeans(pinnedList) {
   const container = document.getElementById('pinned-beans-container');
@@ -189,15 +243,26 @@ function renderPinnedBeans(pinnedList) {
   container.innerHTML = pinnedList.map(item => {
     const bean = item.beans;
     return `
-      <div class="frosted-glass p-4 rounded-xl border border-slate-900 shadow-sm relative overflow-hidden">
-        <div class="flex justify-between items-start mb-2">
-          <div onclick="openDetailModal('${item.id}')" class="cursor-pointer flex-1">
-            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">${escapeHtml(bean.roaster)}</span>
-            <h3 class="text-base font-bold text-slate-900 hover:underline">${escapeHtml(bean.name)}</h3>
+      <div class="frosted-glass p-4 rounded-xl border border-slate-900 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        
+        <div class="flex gap-3 items-start">
+          ${bean.image_url ? `
+            <div class="w-16 h-20 flex-shrink-0 bg-slate-100/50 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border">
+              <img src="${escapeHtml(bean.image_url)}" alt="${escapeHtml(bean.name)}" class="max-h-full max-w-full object-contain filter drop-shadow-md">
+            </div>
+          ` : ''}
+          
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <div onclick="openDetailModal('${item.id}')" class="cursor-pointer">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">${escapeHtml(bean.roaster)}</span>
+                <h3 class="text-base font-bold text-slate-900 hover:underline leading-tight">${escapeHtml(bean.name)}</h3>
+              </div>
+              <button onclick="handlePinToggle('${item.id}', false)" title="Entpinnen" class="text-base p-1 hover:opacity-75">
+                📌
+              </button>
+            </div>
           </div>
-          <button onclick="handlePinToggle('${item.id}', false)" title="Entpinnen" class="text-base p-1 hover:opacity-75">
-            📌
-          </button>
         </div>
 
         <div onclick="openDetailModal('${item.id}')" class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-lab-border cursor-pointer">
@@ -227,7 +292,7 @@ function renderPinnedBeans(pinnedList) {
 }
 
 /**
- * Rendert Bestands-Kacheln
+ * Rendert Bestands-Kacheln im 3:4 Grid
  */
 function renderInventoryBeans(inventoryList) {
   const container = document.getElementById('inventory-container');
@@ -246,6 +311,13 @@ function renderInventoryBeans(inventoryList) {
     const bean = item.beans;
     return `
       <div class="frosted-glass p-3.5 rounded-xl border border-lab-border flex flex-col justify-between space-y-3">
+        
+        ${bean.image_url ? `
+          <div onclick="openDetailModal('${item.id}')" class="w-full aspect-[3/4] bg-slate-100/60 rounded-lg overflow-hidden flex items-center justify-center p-2 border border-lab-border/40 cursor-pointer">
+            <img src="${escapeHtml(bean.image_url)}" alt="${escapeHtml(bean.name)}" class="max-h-full max-w-full object-contain filter drop-shadow-md">
+          </div>
+        ` : ''}
+
         <div>
           <div class="flex justify-between items-start">
             <span class="text-[10px] font-mono uppercase text-slate-400 truncate max-w-[130px]">${escapeHtml(bean.roaster)}</span>
@@ -279,7 +351,7 @@ function renderInventoryBeans(inventoryList) {
 }
 
 /**
- * Rendert Wunschlisten-Kacheln (Tab Wunschliste)
+ * Rendert Wunschlisten-Kacheln
  */
 function renderWishlistBeans(wishlistList) {
   const container = document.getElementById('wishlist-container');
@@ -297,8 +369,13 @@ function renderWishlistBeans(wishlistList) {
   container.innerHTML = wishlistList.map(item => {
     const bean = item.beans;
     return `
-      <div class="frosted-glass p-4 rounded-xl border border-lab-border flex justify-between items-center">
-        <div>
+      <div class="frosted-glass p-4 rounded-xl border border-lab-border flex justify-between items-center gap-3">
+        ${bean.image_url ? `
+          <div class="w-12 h-16 flex-shrink-0 bg-slate-100/50 rounded overflow-hidden flex items-center justify-center p-1">
+            <img src="${escapeHtml(bean.image_url)}" alt="${escapeHtml(bean.name)}" class="max-h-full max-w-full object-contain filter drop-shadow">
+          </div>
+        ` : ''}
+        <div class="flex-1">
           <span class="text-[10px] font-mono uppercase text-slate-400 block">${escapeHtml(bean.roaster)}</span>
           <h4 class="text-sm font-bold text-slate-900">${escapeHtml(bean.name)}</h4>
         </div>
@@ -311,7 +388,7 @@ function renderWishlistBeans(wishlistList) {
 }
 
 /**
- * Event-Handling & In-Place Modal Bearbeitung
+ * Modal Event-Handling
  */
 function initModalEvents() {
   const modal = document.getElementById('detail-modal');
@@ -353,7 +430,7 @@ function initModalEvents() {
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
       const configId = document.getElementById('edit-config-id').value;
-      if (confirm('Möchtest du diese Bohne wirklich aus deinem Bestand löschen?')) {
+      if (confirm('Möchtest du diese Bohne wirklich löschen?')) {
         const result = await deleteUserBeanConfig(configId);
         if (result.success) {
           modal.classList.add('hidden');
@@ -367,7 +444,7 @@ function initModalEvents() {
 }
 
 /**
- * Öffnet das Modal und füllt die Formularfelder mit Bohnendaten
+ * Öffnet das Modal
  */
 function openDetailModal(configId) {
   const item = userBeansData.find(b => b.id === configId);
@@ -395,7 +472,7 @@ function openDetailModal(configId) {
 }
 
 /**
- * Verschiebt eine Bohne von der Wunschliste direkt in den Bestand
+ * Verschiebt Bohne von der Wunschliste in den Bestand
  */
 async function moveToInventory(configId) {
   const result = await updateUserBeanConfig(configId, { status: 'inventory' });
@@ -405,7 +482,7 @@ async function moveToInventory(configId) {
 }
 
 /**
- * Event-Handler für das Anpinnen / Entpinnen
+ * Toggle Pin-Status
  */
 async function handlePinToggle(configId, targetState) {
   const result = await togglePinStatus(configId, targetState);
@@ -417,7 +494,7 @@ async function handlePinToggle(configId, targetState) {
 }
 
 /**
- * Hilfsfunktion zum Schutz vor XSS in Textausgaben
+ * XSS-Schutz
  */
 function escapeHtml(str) {
   if (!str) return '';
