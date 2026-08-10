@@ -141,7 +141,7 @@
           </label>
         </div>
 
-        <!-- Stammdaten -->
+       <!-- Stammdaten -->
         <div class="space-y-3">
           <div>
             <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Bohnen Name *</label>
@@ -162,6 +162,26 @@
               <option value="Light">Light</option>
               <option value="Dark">Dark</option>
             </select>
+          </div>
+
+          <!-- TASTING NOTES TAG-SYSTEM -->
+          <div>
+            <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Tasting Notes (Geschmacksnoten)</label>
+            
+            <!-- Vordefinierte Tag-Cloud -->
+            <div id="tasting-tags-preset" class="flex flex-wrap gap-1.5 mb-2">
+              <button type="button" data-tag="Schokolade" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍫 Schokolade</button>
+              <button type="button" data-tag="Nuss" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌰 Nuss</button>
+              <button type="button" data-tag="Beere" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🫐 Beere</button>
+              <button type="button" data-tag="Zitrus" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍋 Zitrus</button>
+              <button type="button" data-tag="Steinobst" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍑 Steinobst</button>
+              <button type="button" data-tag="Blumig" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌸 Blumig</button>
+              <button type="button" data-tag="Karameil" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍯 Karamell</button>
+            </div>
+
+            <!-- Manuelles Feld für eigene Notes -->
+            <input type="text" id="bean-custom-notes" placeholder="Weitere Noten z. B. Jasmin, Vanille (kommagetrennt)" 
+                   class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-900">
           </div>
         </div>
 
