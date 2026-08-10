@@ -4,11 +4,13 @@
 
 let userBeansData = [];
 let processedImageFile = null; // Speichert das verarbeitete Bild-File/Blob
+let selectedTastingNotes = []; // Speichert die aktuell aktivierten Tags
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
   initAddBeanForm();
   initImageUploadHandler();
+  initTastingNotesHandler();
   initSearchAndFilter();
   initModalEvents();
   initSetupTab();
@@ -16,9 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAndRenderBeans();
 });
 
-/**
- * Steuerung der Bottom Navigation Bar (Tabs)
- */
 /**
  * Steuerung der Bottom Navigation Bar (Tabs)
  */
@@ -58,6 +57,7 @@ function initTabNavigation() {
     });
   });
 }
+
 /**
  * Foto-Upload & Client-side KI-Hintergrundentfernung
  */
@@ -80,11 +80,9 @@ function initImageUploadHandler() {
 
     previewContainer.classList.remove('hidden');
 
-    // Wenn der KI-Toggle aktiviert ist und die KI-Bibliothek geladen wurde:
     if (bgToggle.checked && window.imglyRemoveBackground) {
       spinner.classList.remove('hidden');
       try {
-        // KI entfernt den Hintergrund direkt clientseitig im Browser WebAssembly
         const blob = await window.imglyRemoveBackground(file);
         processedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
         previewImg.src = URL.createObjectURL(processedImageFile);
@@ -97,7 +95,6 @@ function initImageUploadHandler() {
         spinner.classList.add('hidden');
       }
     } else {
-      // Keine KI-Verarbeitung -> Originalbild verwenden
       processedImageFile = file;
       previewImg.src = URL.createObjectURL(file);
     }
@@ -122,13 +119,10 @@ function initSearchAndFilter() {
 /**
  * Formular-Event-Listener für "Neue Bohne"
  */
-/**
- * Formular-Event-Listener für "Neue Bohne"
- */
 function initAddBeanForm() {
   const form = document.getElementById('add-bean-form');
   const submitBtn = document.getElementById('btn-submit-bean');
-  
+
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -136,43 +130,65 @@ function initAddBeanForm() {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Speichere Bohne...';
 
+      // Manuell eingegebene Notizen im Moment des Klicks auslesen
+      const customNotesInput = document.getElementById('bean-custom-notes') ? document.getElementById('bean-custom-notes').value : '';
+      const customNotesArray = customNotesInput
+        ? customNotesInput.split(',').map(n => n.trim()).filter(n => n.length > 0)
+        : [];
+
+      // Vordefinierte Tags (aus globalem Array) + Freitext zusammenführen & Duplikate entfernen
+      const allTastingNotes = [...new Set([...selectedTastingNotes, ...customNotesArray])];
+
       const formData = {
         status: form.querySelector('input[name="status"]:checked').value,
         name: document.getElementById('bean-name').value,
         roaster: document.getElementById('bean-roaster').value,
         roastLevel: document.getElementById('bean-roast').value,
+        tastingNotes: allTastingNotes,
         imageFile: processedImageFile,
-        
+
         singleGrind: document.getElementById('single-grind').value,
         singleYield: document.getElementById('single-yield').value,
         singleTime: document.getElementById('single-time').value,
-        
+
         doubleGrind: document.getElementById('double-grind').value,
         doubleYield: document.getElementById('double-yield').value,
         doubleTime: document.getElementById('double-time').value,
       };
 
       const result = await saveBeanToDatabase(formData);
-      
+
       submitBtn.disabled = false;
       submitBtn.textContent = 'Bohne Speichern';
 
       if (result.success) {
         alert('Bohne erfolgreich gespeichert!');
+        
         form.reset();
         processedImageFile = null;
+        resetTastingNotesUI();
+
         document.getElementById('image-preview-container').classList.add('hidden');
-        
-        // 1. Frische Daten aus Supabase laden und Array aktualisieren
+
         await loadAndRenderBeans();
-        
-        // 2. Erst danach zurück zum Dashboard wechseln
         document.querySelector('[data-tab="dashboard"]').click();
       } else {
         alert('Fehler beim Speichern: ' + result.error);
       }
     });
   }
+}
+
+/**
+ * Hilfsfunktion: Setzt das globale Tag-Array und die Optik der Tag-Buttons zurück
+ */
+function resetTastingNotesUI() {
+  selectedTastingNotes = [];
+  const tagButtons = document.querySelectorAll('#tasting-tags-preset .tag-btn');
+  tagButtons.forEach(btn => {
+    btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+    btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
+  });
 }
 
 /**
@@ -275,6 +291,17 @@ function renderPinnedBeans(pinnedList) {
                 📌
               </button>
             </div>
+
+            <!-- Tasting Notes Badges im Hero-Bereich -->
+            ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
+              <div class="flex flex-wrap gap-1 mt-1.5">
+                ${bean.tasting_notes.map(note => `
+                  <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border/60">
+                    ${escapeHtml(note)}
+                  </span>
+                `).join('')}
+              </div>
+            ` : ''}
           </div>
         </div>
 
@@ -346,6 +373,17 @@ function renderInventoryBeans(inventoryList) {
           <span class="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
             ${escapeHtml(bean.roast_level || 'Medium')}
           </span>
+
+          <!-- Tasting Notes Badges auf den Kacheln -->
+          ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
+            <div class="flex flex-wrap gap-1 mt-2">
+              ${bean.tasting_notes.map(note => `
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 border border-lab-border/60">
+                  ${escapeHtml(note)}
+                </span>
+              `).join('')}
+            </div>
+          ` : ''}
         </div>
 
         <div onclick="openDetailModal('${item.id}')" class="bg-white/60 p-2 rounded border border-lab-border/60 text-xs font-mono space-y-1 cursor-pointer">
@@ -546,4 +584,27 @@ function registerServiceWorker() {
         });
     });
   }
+}
+
+/**
+ * Steuert das An- und Abwählen der Tasting-Notes-Buttons
+ */
+function initTastingNotesHandler() {
+  const tagButtons = document.querySelectorAll('#tasting-tags-preset .tag-btn');
+
+  tagButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tagValue = btn.getAttribute('data-tag');
+
+      if (selectedTastingNotes.includes(tagValue)) {
+        selectedTastingNotes = selectedTastingNotes.filter(t => t !== tagValue);
+        btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+        btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
+      } else {
+        selectedTastingNotes.push(tagValue);
+        btn.classList.remove('bg-white', 'text-slate-600', 'border-lab-border');
+        btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+      }
+    });
+  });
 }
