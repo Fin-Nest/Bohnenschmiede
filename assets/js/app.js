@@ -2,12 +2,14 @@
  * BOHNENSCHMIEDE - MAIN APP CONTROLLER
  */
 
+// Haupt-Initialisierung, sobald das HTML vollständig geladen ist
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
+  initAddBeanForm();
 });
 
 /**
- * Steuerung der Bottom Navigation Bar
+ * Steuerung der Bottom Navigation Bar (Tabs)
  */
 function initTabNavigation() {
   const navButtons = document.querySelectorAll('.nav-btn');
@@ -42,4 +44,45 @@ function initTabNavigation() {
       button.classList.add('text-slate-900', 'font-semibold');
     });
   });
+}
+
+/**
+ * Formular-Event-Listener für "Neue Bohne"
+ */
+function initAddBeanForm() {
+  const form = document.getElementById('add-bean-form');
+  
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Formularwerte auslesen
+      const formData = {
+        status: form.querySelector('input[name="status"]:checked').value,
+        name: document.getElementById('bean-name').value,
+        roaster: document.getElementById('bean-roaster').value,
+        roastLevel: document.getElementById('bean-roast').value,
+        
+        singleGrind: document.getElementById('single-grind').value,
+        singleYield: document.getElementById('single-yield').value,
+        singleTime: document.getElementById('single-time').value,
+        
+        doubleGrind: document.getElementById('double-grind').value,
+        doubleYield: document.getElementById('double-yield').value,
+        doubleTime: document.getElementById('double-time').value,
+      };
+
+      // In Supabase speichern
+      const result = await saveBeanToDatabase(formData);
+      
+      if (result.success) {
+        alert('Bohne erfolgreich gespeichert!');
+        form.reset();
+        // Wechsel zurück zum Dashboard
+        document.querySelector('[data-tab="dashboard"]').click();
+      } else {
+        alert('Fehler beim Speichern: ' + result.error);
+      }
+    });
+  }
 }
