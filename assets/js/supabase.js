@@ -216,3 +216,24 @@ async function deleteUserBeanConfig(configId) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Aktualisiert die Stammdaten (z.B. Tasting Notes) einer Bohne in Tabelle 'beans'
+ */
+async function updateBeanMasterData(beanId, masterData) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('beans')
+      .update({
+        tasting_notes: masterData.tastingNotes
+      })
+      .eq('id', beanId)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Bohnen-Stammdaten:', error);
+    return { success: false, error: error.message };
+  }
+}
