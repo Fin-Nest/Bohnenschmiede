@@ -55,3 +55,77 @@ async function saveBeanToDatabase(formData) {
     return { success: false, error: error.message };
   }
 }
+/**
+ * Lädt alle Bohnen und zugehörigen Konfigurationen des Nutzers aus Supabase.
+ */
+async function fetchUserBeans() {
+  try {
+    const { data, error } = await supabase
+      .from('user_bean_configs')
+      .select(`
+        id,
+        status,
+        is_pinned,
+        personal_score,
+        single_grind_size,
+        single_yield_out,
+        single_time_sec,
+        double_grind_size,
+        double_yield_out,
+        double_time_sec,
+        beans (
+          id,
+          name,
+          roaster,
+          roast_level,
+          tasting_notes,
+          image_url
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Laden der Bohnen:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Ändert den Pin-Status (Pinned / Unpinned) einer Bohne.
+ * Prüft vorab, dass maximal 3 Bohnen gleichzeitig angepinnt sein können.
+ */
+async function togglePinStatus(configId, newPinnedState) {
+  try {
+    // Wenn angepinnt werden soll: Prüfe, wie viele Bohnen bereits angepinnt sind
+    if (newPinnedState) {
+      const { data: currentPinned, error: countError } = await supabase
+        .from('user_bean_configs')
+        .select('id')
+        .eq('is_pinned', true);
+
+      if (countError) throw countError;
+
+      if (currentPinned && currentPinned.length >= 3) {
+        return { 
+          success: false, 
+          error: 'Es können maximal 3 Bohnen gleichzeitig im Hero-Bereich angepinnt werden.' 
+        };
+      }
+    }
+
+    // Status in der Datenbank aktualisieren
+    const { data, error } = await supabase
+      .from('user_bean_configs')
+      .update({ is_pinned: newPinnedState })
+      .eq('id', configId)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Pin-Status:', error);
+    return { success: false, error: error.message };
+  }
+}
