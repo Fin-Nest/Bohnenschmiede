@@ -510,6 +510,67 @@
     </div>
   </div>
 
+<!-- MODAL 1: NEUE PACKUNG ANLEGEN -->
+  <div id="new-pack-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="frosted-glass bg-white/95 max-w-sm w-full rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b border-lab-border pb-3">
+        <h3 class="text-sm font-bold text-slate-900 font-mono">➕ Neue Packung anbrechen</h3>
+        <button id="new-pack-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <form id="new-pack-form" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Bezeichnung (optional)</label>
+          <input type="text" id="pack-name-input" placeholder="z. B. Packung 2 (Juli-Röstung)" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Röstdatum *</label>
+          <input type="date" id="pack-roast-date-input" required class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+        </div>
+
+        <button type="submit" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition mt-2">
+          Packung Aktivieren
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: NEUEN BEZUG LOGGEN -->
+  <div id="shot-log-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="frosted-glass bg-white/95 max-w-md w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b border-lab-border pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⏱️</span>
+          <h3 class="text-base font-bold text-slate-900">Bezug loggen</h3>
+        </div>
+        <button id="shot-log-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <form id="shot-log-form" class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">DF64 Mahlgrad *</label>
+            <input type="text" id="log-grind-size" placeholder="14,0" required class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Zeit (Sekunden) *</label>
+            <input type="number" id="log-time-sec" placeholder="27" required class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Notizen zum Bezug</label>
+          <input type="text" id="log-notes" placeholder="z. B. Etwas Channeling, süßer Nachgeschmack" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+        </div>
+
+        <button type="submit" class="w-full bg-slate-900 text-white font-mono text-xs py-3 rounded-lg font-semibold hover:bg-slate-800 transition">
+          Bezug Speichern
+        </button>
+      </form>
+    </div>
+  </div>
+  
   <!-- JavaScript Modules -->
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/supabase.js"></script>
