@@ -6,7 +6,7 @@
 const SUPABASE_URL = 'https://vlkovdijnyllqhfpbosv.supabase.co'; 
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Bsm5tsPl3xTvwEAYotW35A_ppzRwVd5'; 
 
-// 2. Client-Initialisierung (Variable heißt 'supabaseClient', um Konflikte mit window.supabase zu vermeiden)
+// 2. Client-Initialisierung
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 /**
@@ -39,7 +39,7 @@ async function uploadBeanImage(fileOrBlob) {
 }
 
 /**
- * Speichert eine neue Bohne inkl. optionalem Foto und User-Konfiguration
+ * Speichert eine neue Bohne inkl. optionalem Foto, Link und User-Konfiguration
  */
 async function saveBeanToDatabase(formData) {
   try {
@@ -53,7 +53,7 @@ async function saveBeanToDatabase(formData) {
       }
     }
 
-    // A) In Tabelle 'beans' eintragen
+    // A) In Tabelle 'beans' eintragen (inkl. website_url)
     const { data: beanData, error: beanError } = await supabaseClient
       .from('beans')
       .insert([{
@@ -62,7 +62,8 @@ async function saveBeanToDatabase(formData) {
         roast_level: formData.roastLevel,
         arabica_percentage: formData.arabicaPercentage !== undefined ? formData.arabicaPercentage : 100,
         tasting_notes: formData.tastingNotes || [],
-        image_url: imageUrl
+        image_url: imageUrl,
+        website_url: formData.websiteUrl || null // ⬅️ NEU
       }])
       .select()
       .single();
@@ -125,7 +126,8 @@ async function fetchUserBeans() {
           roast_level,
           arabica_percentage,
           tasting_notes,
-          image_url
+          image_url,
+          website_url
         )
       `)
       .order('created_at', { ascending: false });
@@ -220,7 +222,7 @@ async function deleteUserBeanConfig(configId) {
 }
 
 /**
- * Aktualisiert die Stammdaten (Tasting Notes, Image URL & Mischungsverhältnis) einer Bohne in der Tabelle 'beans'
+ * Aktualisiert die Stammdaten (Tasting Notes, Image URL, Mischung & Link) einer Bohne
  */
 async function updateBeanMasterData(beanId, masterData) {
   try {
@@ -234,6 +236,9 @@ async function updateBeanMasterData(beanId, masterData) {
     }
     if (masterData.arabicaPercentage !== undefined) {
       updatePayload.arabica_percentage = masterData.arabicaPercentage;
+    }
+    if (masterData.websiteUrl !== undefined) { // ⬅️ NEU
+      updatePayload.website_url = masterData.websiteUrl || null;
     }
 
     const { data, error } = await supabaseClient
