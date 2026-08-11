@@ -2,7 +2,7 @@
  * BOHNENSCHMIEDE - SERVICE WORKER (OFFLINE CACHING)
  */
 
-const CACHE_NAME = 'bohnenschmiede-v2';
+const CACHE_NAME = 'bohnenschmiede-v3';
 
 // Nur lokale App-Shell-Dateien zwischenspeichern
 const ASSETS_TO_CACHE = [
