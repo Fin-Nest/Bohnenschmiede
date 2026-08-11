@@ -886,13 +886,19 @@ function openDetailModal(configId) {
   const viewStatus = document.getElementById('view-status-badge');
   if (viewStatus) viewStatus.textContent = item.status === 'wishlist' ? '📋 Wunschliste' : '📦 Im Bestand';
 
-  // Innerhalb von openDetailModal(configId):
+  // Röstgrad Badge mit dynamischen Farbklassen
   const viewRoast = document.getElementById('view-roast-badge');
   if (viewRoast) {
     viewRoast.textContent = bean.roast_level || 'Medium';
     viewRoast.className = `text-xs font-mono px-2 py-1 rounded border ${getRoastBadgeClass(bean.roast_level)}`;
   }
 
+  // Arabica-Prozentwert sauber definieren
+  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
+  const viewBlend = document.getElementById('view-blend-badge');
+  if (viewBlend) viewBlend.textContent = formatBlendText(arabicaVal);
+
+  // Score Badge mit dynamischen Farbklassen
   const viewScore = document.getElementById('view-score-badge');
   if (item.personal_score) {
     viewScore.textContent = `⭐ ${formatNumberDisplay(item.personal_score, 1)}`;
@@ -901,6 +907,7 @@ function openDetailModal(configId) {
   } else {
     viewScore.classList.add('hidden');
   }
+
   // Tasting Notes
   const viewNotesList = document.getElementById('view-tasting-notes-list');
   if (viewNotesList) {
@@ -923,7 +930,7 @@ function openDetailModal(configId) {
   document.getElementById('view-double-grind').textContent = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '-';
   document.getElementById('view-double-details').textContent = `${formatNumberDisplay(item.double_yield_out)}g | ${formatNumberDisplay(item.double_time_sec, 0)}s`;
 
-  // --- EDIT-MODE FORMULAR-FELDER ---
+  // --- EDIT-MODE FORMULAR-FELDER BEFÜLLEN ---
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
