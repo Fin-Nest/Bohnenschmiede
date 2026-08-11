@@ -2,10 +2,8 @@
  * BOHNENSCHMIEDE - SERVICE WORKER (OFFLINE CACHING)
  */
 
-// Versionsnummer erhöhen, damit der Browser den alten Cache verwirft und neu lädt
-const CACHE_NAME = 'bohnenschmiede-v32';
+const CACHE_NAME = 'bohnenschmiede-v33';
 
-// Nur lokale App-Shell-Dateien & neue Icons zwischenspeichern
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -19,20 +17,26 @@ const ASSETS_TO_CACHE = [
 ];
 
 /**
- * 1. Install Event: Lokale App-Shell im Cache speichern
+ * 1. Install Event: Robustes Einzel-Caching der App-Shell
  */
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching App Shell');
-      return cache.addAll(ASSETS_TO_CACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      console.log('[Service Worker] Caching App Shell...');
+      for (const asset of ASSETS_TO_CACHE) {
+        try {
+          await cache.add(asset);
+        } catch (err) {
+          console.warn(`[Service Worker] Konnte Ressource nicht cachen: ${asset}`, err);
+        }
+      }
     })
   );
   self.skipWaiting();
 });
 
 /**
- * 2. Activate Event: Alte Caches aufräumen
+ * 2. Activate Event: Alte Caches zuverlässig aufräumen
  */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -51,7 +55,7 @@ self.addEventListener('activate', (event) => {
 });
 
 /**
- * 3. Fetch Event: Anfragen aus dem Cache bedienen
+ * 3. Fetch Event: Anfragen aus dem Cache bedienen (Cache First)
  */
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
