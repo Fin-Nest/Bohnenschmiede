@@ -17,7 +17,7 @@
   <!-- Supabase JS Client library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- imgly Background Removal JS (Benannter Import statt Default) -->
+  <!-- imgly Background Removal JS -->
   <script type="module">
     import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm';
     window.imglyRemoveBackground = removeBackground;
@@ -48,7 +48,7 @@
     }
   </script>
 
-  <!-- Custom Lab CSS (Grid Linien & Frosted Glass Effect) -->
+  <!-- Custom Lab CSS -->
   <style>
     .frosted-glass {
       background: rgba(255, 255, 255, 0.75);
@@ -78,9 +78,8 @@
   <!-- MAIN CONTENT AREA -->
   <main id="app-content" class="flex-1 overflow-y-auto p-4 pb-24 max-w-2xl mx-auto w-full">
     
-    <!-- TAB 1: DASHBOARD (Active Beans & Inventory) -->
+    <!-- TAB 1: DASHBOARD -->
     <section id="tab-dashboard" class="space-y-6">
-      
       <!-- HERO AREA: Active Beans (Pinning System max 3) -->
       <div>
         <div class="flex items-center justify-between mb-3">
@@ -123,7 +122,7 @@
       </div>
     </section>
 
-    <!-- TAB 3: ADD BEAN (Quick Add Mask) -->
+    <!-- TAB 3: ADD BEAN -->
     <section id="tab-add" class="hidden space-y-4">
       <h2 class="text-xs uppercase tracking-widest font-semibold text-slate-500 font-mono">Neue Bohne Erfassen</h2>
       
@@ -141,7 +140,7 @@
           </label>
         </div>
 
-       <!-- Stammdaten -->
+        <!-- Stammdaten -->
         <div class="space-y-3">
           <div>
             <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Bohnen Name *</label>
@@ -170,7 +169,7 @@
             </select>
           </div>
           
-<!-- MISCHUNGSVERHÄLTNIS SLIDER (NEUE BOHNE) -->
+          <!-- MISCHUNGSVERHÄLTNIS SLIDER -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="text-xs font-mono text-slate-500 uppercase">Mischungsverhältnis</label>
@@ -187,8 +186,6 @@
           <!-- TASTING NOTES TAG-SYSTEM -->
           <div>
             <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Tasting Notes (Geschmacksnoten)</label>
-            
-            <!-- Vordefinierte Tag-Cloud -->
             <div id="tasting-tags-preset" class="flex flex-wrap gap-1.5 mb-2">
               <button type="button" data-tag="Schokolade" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍫 Schokolade</button>
               <button type="button" data-tag="Nuss" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌰 Nuss</button>
@@ -196,10 +193,8 @@
               <button type="button" data-tag="Zitrus" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍋 Zitrus</button>
               <button type="button" data-tag="Steinobst" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍑 Steinobst</button>
               <button type="button" data-tag="Blumig" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌸 Blumig</button>
-              <button type="button" data-tag="Karameil" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍯 Karamell</button>
+              <button type="button" data-tag="Karamell" class="tag-btn text-xs font-mono px-2.5 py-1 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍯 Karamell</button>
             </div>
-
-            <!-- Manuelles Feld für eigene Notes -->
             <input type="text" id="bean-custom-notes" placeholder="Weitere Noten z. B. Jasmin, Vanille (kommagetrennt)" 
                    class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-900">
           </div>
@@ -208,7 +203,6 @@
         <!-- FOTO UPLOAD & KI BACKGROUND REMOVAL -->
         <div class="border-t border-lab-border pt-4 space-y-3">
           <label class="block text-xs font-mono font-bold uppercase text-slate-700">Packungsfoto</label>
-          
           <input type="file" id="bean-image-input" accept="image/*" 
                  class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer">
 
@@ -219,10 +213,8 @@
             </label>
           </div>
 
-          <!-- Live Preview & Loading State -->
           <div id="image-preview-container" class="hidden relative mt-2 w-28 h-36 bg-slate-100 rounded-lg border border-lab-border flex items-center justify-center overflow-hidden p-2">
             <img id="image-preview" src="" alt="Vorschau" class="max-w-full max-h-full object-contain filter drop-shadow-md">
-            
             <div id="image-loading-spinner" class="hidden absolute inset-0 bg-white/85 backdrop-blur-sm flex flex-col items-center justify-center text-[10px] font-mono text-slate-600 p-2 text-center space-y-1">
               <div class="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
               <span>KI entfernt Hintergrund...</span>
@@ -230,7 +222,7 @@
           </div>
         </div>
 
-        <!-- DUAL DIAL-IN PARAMETER LOGIC -->
+        <!-- DUAL DIAL-IN PARAMETER -->
         <div class="border-t border-lab-border pt-4 space-y-4">
           <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Dial-In Parameter</h3>
 
@@ -279,7 +271,7 @@
       </form>
     </section>
 
-    <!-- TAB 4: SETUP / EXPORT -->
+    <!-- TAB 4: SETUP -->
     <section id="tab-setup" class="hidden space-y-4">
       <h2 class="text-xs uppercase tracking-widest font-semibold text-slate-500 font-mono">Setup & Daten-Export</h2>
       <div class="frosted-glass p-5 rounded-xl border border-lab-border space-y-4">
@@ -313,11 +305,11 @@
     </div>
   </nav>
 
- <!-- DETAIL & EDIT MODAL OVERLAY -->
+  <!-- DETAIL & EDIT MODAL OVERLAY -->
   <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="frosted-glass bg-white/95 max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-lab-border shadow-2xl p-5 space-y-5">
       
-      <!-- MODAL HEADER (Mit Schließen-X und Stift-Symbol) -->
+      <!-- MODAL HEADER -->
       <div class="flex justify-between items-start border-b border-lab-border pb-3">
         <div class="flex gap-3 items-center min-w-0">
           <div id="modal-image-container" class="hidden w-14 h-18 bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border flex-shrink-0">
@@ -336,18 +328,15 @@
         </div>
 
         <div class="flex items-center gap-1 flex-shrink-0">
-          <!-- STIFT-BUTTON ZUM SCHALTEN IN DEN EDIT-MODUS -->
-          <button id="btn-enable-edit" title="Bohne Bearbeiten" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
+          <button id="btn-enable-edit" type="button" title="Bohne Bearbeiten" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
             ✏️
           </button>
-          <button id="modal-close-btn" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-2">✕</button>
+          <button id="modal-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-2">✕</button>
         </div>
       </div>
 
       <!-- MODUS 1: REINE READ-ONLY DETAILS-ANSICHT -->
       <div id="modal-view-mode" class="space-y-4">
-        
-        <!-- Badges (Rating, Röstgrad, Mischung) -->
         <div class="flex flex-wrap gap-1.5">
           <span id="view-status-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-700 border border-lab-border font-semibold">
             📦 Im Bestand
@@ -363,23 +352,19 @@
           </span>
         </div>
 
-        <!-- Tasting Notes -->
         <div id="view-tasting-notes-container" class="pt-2 border-t border-lab-border space-y-1">
           <span class="text-[10px] font-mono uppercase text-slate-400 block">Tasting Notes</span>
           <div id="view-tasting-notes-list" class="flex flex-wrap gap-1"></div>
         </div>
 
-        <!-- Extraktions-Parameter (DF64) -->
         <div class="pt-2 border-t border-lab-border space-y-3">
           <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Dial-In Parameter</h3>
-
           <div class="grid grid-cols-2 gap-3">
             <div class="bg-slate-50/90 p-3 rounded-lg border border-lab-border space-y-1">
               <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Single Shot (8,0g)</span>
               <div id="view-single-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
               <div id="view-single-details" class="text-xs font-mono text-slate-500">- g | - s</div>
             </div>
-
             <div class="bg-slate-50/90 p-3 rounded-lg border border-slate-900/20 space-y-1">
               <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Double Shot (18,0g)</span>
               <div id="view-double-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
@@ -407,13 +392,11 @@
           </div>
         </div>
 
-        <!-- HERSTELLER LINK BEARBEITEN -->
         <div>
           <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Hersteller-Website (Link)</label>
           <input type="url" id="edit-website" placeholder="https://..." class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
         </div>
 
-        <!-- PACKUNGSFOTO VERWALTEN -->
         <div class="pt-2 border-t border-lab-border space-y-2">
           <label class="block text-[10px] font-mono font-bold uppercase text-slate-700">Packungsfoto verwalten</label>
           <div id="modal-image-preview-box" class="hidden flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-lab-border">
@@ -437,7 +420,6 @@
           </div>
         </div>
 
-        <!-- MISCHUNGSVERHÄLTNIS -->
         <div class="pt-2 border-t border-lab-border">
           <div class="flex justify-between items-center mb-1">
             <label class="text-[10px] font-mono text-slate-500 uppercase">Mischungsverhältnis Bearbeiten</label>
@@ -447,7 +429,6 @@
                  class="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer">
         </div>
         
-        <!-- TASTING NOTES -->
         <div class="pt-2 border-t border-lab-border">
           <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Tasting Notes Bearbeiten</label>
           <div id="modal-tasting-tags-preset" class="flex flex-wrap gap-1.5 mb-2">
@@ -463,7 +444,6 @@
                  class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-900">
         </div>
 
-        <!-- MAHLGRADE -->
         <div class="space-y-3 pt-2 border-t border-lab-border">
           <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Extraction Protocol</h3>
           <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
@@ -493,117 +473,6 @@
           </button>
           <button type="submit" class="flex-1 bg-slate-900 text-white text-xs font-mono py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
             Speichern
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-<!-- EDIT-MODAL: BILD VERWALTEN & HOCHLADEN -->
-        <div class="pt-3 border-t border-lab-border space-y-3">
-          <label class="block text-[10px] font-mono font-bold uppercase text-slate-700">Packungsfoto verwalten</label>
-          
-          <!-- Vorschau des aktuellen Bildes + Löschen Button -->
-          <div id="modal-image-preview-box" class="hidden flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-lab-border">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-16 bg-white rounded border border-lab-border overflow-hidden p-1 flex items-center justify-center">
-                <img id="modal-image-current-preview" src="" alt="Vorschau" class="max-h-full max-w-full object-contain filter drop-shadow">
-              </div>
-              <span class="text-xs font-mono text-slate-600">Aktuelles Foto</span>
-            </div>
-            <button type="button" id="btn-delete-modal-image" class="px-2.5 py-1 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-mono font-semibold hover:bg-red-100 transition">
-              🗑️ Bild löschen
-            </button>
-          </div>
-
-          <!-- Neues Bild auswählen -->
-          <div>
-            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Neues Foto hochladen</label>
-            <input type="file" id="modal-bean-image-input" accept="image/*" 
-                   class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer">
-
-            <div class="flex items-center gap-2 pt-2">
-              <input type="checkbox" id="modal-toggle-bg-removal" class="rounded border-lab-border text-slate-900 focus:ring-0 cursor-pointer">
-              <label for="modal-toggle-bg-removal" class="text-xs text-slate-600 font-medium cursor-pointer select-none">
-                ✨ KI-Hintergrund automatisch entfernen
-              </label>
-            </div>
-          </div>
-        </div>
-
-<!-- MISCHUNGSVERHÄLTNIS SLIDER (EDIT MODAL) -->
-        <div class="pt-2 border-t border-lab-border">
-          <div class="flex justify-between items-center mb-1">
-            <label class="text-[10px] font-mono text-slate-500 uppercase">Mischungsverhältnis Bearbeiten</label>
-            <span id="edit-blend-display" class="text-xs font-mono font-bold text-slate-900">100% Arabica</span>
-          </div>
-          <input type="range" id="edit-arabica-slider" min="0" max="100" value="100" step="5"
-                 class="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer">
-        </div>
-        
-        <!-- NEU: TASTING NOTES IN-PLACE EDITING -->
-        <div class="pt-2 border-t border-lab-border">
-          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Tasting Notes Bearbeiten</label>
-          
-          <div id="modal-tasting-tags-preset" class="flex flex-wrap gap-1.5 mb-2">
-            <button type="button" data-tag="Schokolade" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍫 Schokolade</button>
-            <button type="button" data-tag="Nuss" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌰 Nuss</button>
-            <button type="button" data-tag="Beere" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🫐 Beere</button>
-            <button type="button" data-tag="Zitrus" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍋 Zitrus</button>
-            <button type="button" data-tag="Steinobst" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍑 Steinobst</button>
-            <button type="button" data-tag="Blumig" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌸 Blumig</button>
-            <button type="button" data-tag="Karamell" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍯 Karamell</button>
-          </div>
-
-          <input type="text" id="edit-custom-notes" placeholder="Weitere Noten (kommagetrennt)" 
-                 class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-900">
-        </div>
-
-        <div class="space-y-3 pt-2">
-          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Extraction Protocol</h3>
-
-          <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
-            <span class="text-xs font-mono font-semibold text-slate-600 block">Single Shot (8,0g In)</span>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block text-[10px] font-mono text-slate-400">Mahlgrad</label>
-                <input type="text" id="edit-single-grind" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
-              </div>
-              <div>
-                <label class="block text-[10px] font-mono text-slate-400">Yield (g)</label>
-                <input type="text" id="edit-single-yield" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
-              </div>
-              <div>
-                <label class="block text-[10px] font-mono text-slate-400">Zeit (s)</label>
-                <input type="text" id="edit-single-time" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
-            <span class="text-xs font-mono font-semibold text-slate-600 block">Double Shot (18,0g In)</span>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block text-[10px] font-mono text-slate-400">Mahlgrad</label>
-                <input type="text" id="edit-double-grind" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
-              </div>
-              <div>
-                <label class="block text-[10px] font-mono text-slate-400">Yield (g)</label>
-                <input type="text" id="edit-double-yield" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
-              </div>
-              <div>
-                <label class="block text-[10px] font-mono text-slate-400">Zeit (s)</label>
-                <input type="text" id="edit-double-time" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex gap-2 pt-3 border-t border-lab-border">
-          <button type="button" id="btn-delete-bean" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-mono font-semibold hover:bg-red-100 transition">
-            Löschen
-          </button>
-          <button type="submit" class="flex-1 bg-slate-900 text-white text-xs font-mono py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
-            Änderungen Speichern
           </button>
         </div>
       </form>
