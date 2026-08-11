@@ -338,8 +338,11 @@
         </div>
       </div>
 
-      <!-- MODUS 1: REINE READ-ONLY DETAILS-ANSICHT -->
+
+            <!-- MODUS 1: REINE READ-ONLY DETAILS-ANSICHT -->
       <div id="modal-view-mode" class="space-y-4">
+        
+        <!-- 1. BADGES (Status, Röstgrad, Blend, Rating) -->
         <div class="flex flex-wrap gap-1.5">
           <span id="view-status-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-700 border border-lab-border font-semibold">
             📦 Im Bestand
@@ -355,12 +358,30 @@
           </span>
         </div>
 
+        <!-- 2. TASTING NOTES -->
         <div id="view-tasting-notes-container" class="pt-2 border-t border-lab-border space-y-1">
           <span class="text-[10px] font-mono uppercase text-slate-400 block">Tasting Notes</span>
           <div id="view-tasting-notes-list" class="flex flex-wrap gap-1"></div>
         </div>
 
-        <!-- MAHLGRAD-VERLAUF DIAGRAMM & PACKUNGSVERWALTUNG -->
+        <!-- 3. DF64 DIAL-IN PARAMETER -->
+        <div class="pt-2 border-t border-lab-border space-y-3">
+          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Dial-In Parameter</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50/90 p-3 rounded-lg border border-lab-border space-y-1">
+              <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Single Shot (8,0g)</span>
+              <div id="view-single-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
+              <div id="view-single-details" class="text-xs font-mono text-slate-500">- g | - s</div>
+            </div>
+            <div class="bg-slate-50/90 p-3 rounded-lg border border-slate-900/20 space-y-1">
+              <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Double Shot (18,0g)</span>
+              <div id="view-double-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
+              <div id="view-double-details" class="text-xs font-mono text-slate-500">- g | - s</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. MAHLGRAD-VERLAUF DIAGRAMM & PACKUNGSVERWALTUNG (JETZT AM ENDE) -->
         <div class="pt-3 border-t border-lab-border space-y-3">
           <div class="flex justify-between items-center">
             <h3 class="text-xs font-mono font-bold uppercase text-slate-700">Mahlgrad-Drift (Historie)</h3>
@@ -388,21 +409,6 @@
           </button>
         </div>
 
-        <div class="pt-2 border-t border-lab-border space-y-3">
-          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Dial-In Parameter</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-slate-50/90 p-3 rounded-lg border border-lab-border space-y-1">
-              <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Single Shot (8,0g)</span>
-              <div id="view-single-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
-              <div id="view-single-details" class="text-xs font-mono text-slate-500">- g | - s</div>
-            </div>
-            <div class="bg-slate-50/90 p-3 rounded-lg border border-slate-900/20 space-y-1">
-              <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Double Shot (18,0g)</span>
-              <div id="view-double-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
-              <div id="view-double-details" class="text-xs font-mono text-slate-500">- g | - s</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- MODUS 2: FORMULAR ZUM BEARBEITEN (ANFANGS VERSTECKT) -->
