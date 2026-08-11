@@ -339,3 +339,84 @@ async function saveShotLog(packId, grindSize, timeSec, notes = '') {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Löscht ein einzelnes Bezugs-Protokoll (Shot Log)
+ */
+async function deleteShotLogFromDatabase(logId) {
+  try {
+    const { error } = await supabaseClient
+      .from('shot_logs')
+      .delete()
+      .eq('id', logId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Fehler beim Löschen des Bezugs:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Aktualisiert ein fehlerhaftes Bezugs-Protokoll
+ */
+async function updateShotLogInDatabase(logId, updatedData) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('shot_logs')
+      .update({
+        grind_size: parseFlexibleNumber(updatedData.grindSize),
+        time_sec: parseInt(updatedData.timeSec, 10),
+        notes: updatedData.notes || ''
+      })
+      .eq('id', logId)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Bezugs:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Löscht eine Packung samt allen zugehörigen Bezügen
+ */
+async function deleteBeanPackFromDatabase(packId) {
+  try {
+    const { error } = await supabaseClient
+      .from('bean_packs')
+      .delete()
+      .eq('id', packId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Fehler beim Löschen der Packung:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Aktualisiert Name oder Röstdatum einer Packung
+ */
+async function updateBeanPackInDatabase(packId, updatedData) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('bean_packs')
+      .update({
+        pack_name: updatedData.packName,
+        roast_date: updatedData.roastDate
+      })
+      .eq('id', packId)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Packung:', error);
+    return { success: false, error: error.message };
+  }
+}
