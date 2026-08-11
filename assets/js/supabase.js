@@ -254,3 +254,88 @@ async function updateBeanMasterData(beanId, masterData) {
     return { success: false, error: error.message };
   }
 }
+/**
+ * Erstellt eine neue Packung für eine Bohne und setzt sie als aktiv
+ */
+async function createBeanPack(beanId, roastDate, packName = 'Neue Packung') {
+  try {
+    // Vorherige Packungen dieser Bohne deaktivieren
+    await supabaseClient
+      .from('bean_packs')
+      .update({ is_active: false })
+      .eq('bean_id', beanId);
+
+    // Neue aktive Packung anlegen
+    const { data, error } = await supabaseClient
+      .from('bean_packs')
+      .insert([{
+        bean_id: beanId,
+        roast_date: roastDate,
+        pack_name: packName,
+        is_active: true
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Anlegen der Packung:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Lädt alle Packungen inklusive aller zugehörigen Shot-Logs einer Bohne
+ */
+async function fetchPacksAndLogsForBean(beanId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('bean_packs')
+      .select(`
+        id,
+        pack_name,
+        roast_date,
+        is_active,
+        created_at,
+        shot_logs (
+          id,
+          grind_size,
+          time_sec,
+          notes,
+          created_at
+        )
+      `)
+      .eq('bean_id', beanId)
+      .order('roast_date', { ascending: true });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Laden der Packungen und Logs:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Speichert einen neuen Bezug (Shot Log) für eine spezifische Packung
+ */
+async function saveShotLog(packId, grindSize, timeSec, notes = '') {
+  try {
+    const { data, error } = await supabaseClient
+      .from('shot_logs')
+      .insert([{
+        pack_id: packId,
+        grind_size: parseFlexibleNumber(grindSize),
+        time_sec: parseInt(timeSec, 10),
+        notes: notes
+      }])
+      .select();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Fehler beim Speichern des Bezugs:', error);
+    return { success: false, error: error.message };
+  }
+}
