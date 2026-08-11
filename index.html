@@ -381,13 +381,6 @@
           <div class="bg-white p-2 rounded-xl border border-lab-border shadow-sm">
             <canvas id="grind-chart" class="w-full h-48"></canvas>
           </div>
-          <!-- HISTORIE & MANAGEMENT DER PACKUNGEN UND BEZÜGE -->
-          <div id="packs-and-logs-management" class="space-y-3 pt-2">
-            <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">Erfasste Packungen & Bezüge</span>
-            <div id="packs-history-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
-              <!-- Dynamische Liste wird per JS gerendert -->
-            </div>
-          </div>
 
           <!-- Button zum Loggen eines neuen Shots -->
           <button id="btn-open-shot-logger" type="button" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
@@ -433,6 +426,14 @@
         <div>
           <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Hersteller-Website (Link)</label>
           <input type="url" id="edit-website" placeholder="https://..." class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+        </div>
+
+        <!-- NEU: PACKUNGEN & BEZÜGE VERWALTEN (NUR IM BEARBEITEN-MODUS) -->
+        <div id="packs-and-logs-management" class="space-y-3 pt-3 border-t border-lab-border">
+          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">Erfasste Packungen & Bezüge verwalten</h3>
+          <div id="packs-history-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <!-- Dynamische Liste wird per JS gerendert -->
+          </div>
         </div>
 
         <div class="pt-2 border-t border-lab-border space-y-2">
