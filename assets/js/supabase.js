@@ -60,7 +60,7 @@ async function saveBeanToDatabase(formData) {
         name: formData.name,
         roaster: formData.roaster,
         roast_level: formData.roastLevel,
-        arabica_percentage: formData.arabicaPercentage !== undefined ? formData.arabicaPercentage : 100, // ⬅️ NEU
+        arabica_percentage: formData.arabicaPercentage !== undefined ? formData.arabicaPercentage : 100,
         tasting_notes: formData.tastingNotes || [],
         image_url: imageUrl
       }])
@@ -123,6 +123,7 @@ async function fetchUserBeans() {
           name,
           roaster,
           roast_level,
+          arabica_percentage,
           tasting_notes,
           image_url
         )
@@ -219,7 +220,7 @@ async function deleteUserBeanConfig(configId) {
 }
 
 /**
- * Aktualisiert die Stammdaten (z.B. Tasting Notes und Image URL) einer Bohne in Tabelle 'beans'
+ * Aktualisiert die Stammdaten (Tasting Notes, Image URL & Mischungsverhältnis) einer Bohne in der Tabelle 'beans'
  */
 async function updateBeanMasterData(beanId, masterData) {
   try {
@@ -234,7 +235,7 @@ async function updateBeanMasterData(beanId, masterData) {
     if (masterData.arabicaPercentage !== undefined) {
       updatePayload.arabica_percentage = masterData.arabicaPercentage;
     }
-    
+
     const { data, error } = await supabaseClient
       .from('beans')
       .update(updatePayload)
