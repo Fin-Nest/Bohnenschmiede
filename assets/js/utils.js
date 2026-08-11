@@ -126,7 +126,7 @@ function calculateDaysSinceRoast(roastDateStr, shotDateStr) {
 }
 
 /**
- * Rendert das Chart.js Liniendiagramm mit einer eigenen Linie pro Packung
+ * Rendert das Chart.js Liniendiagramm mit optimierter Legende für viele Packungen
  */
 function renderGrindChart(canvasId, packsData) {
   const ctx = document.getElementById(canvasId);
@@ -136,7 +136,7 @@ function renderGrindChart(canvasId, packsData) {
     grindChartInstance.destroy();
   }
 
-  const colors = ['#0f172a', '#d97706', '#2563eb', '#16a34a', '#dc2626', '#9333ea'];
+  const colors = ['#0f172a', '#d97706', '#2563eb', '#16a34a', '#dc2626', '#9333ea', '#0891b2', '#c026d3'];
 
   const datasets = packsData.map((pack, index) => {
     const sortedLogs = (pack.shot_logs || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -149,7 +149,7 @@ function renderGrindChart(canvasId, packsData) {
     const color = colors[index % colors.length];
 
     return {
-      label: `${pack.pack_name} (Röstung: ${pack.roast_date})`,
+      label: `${pack.pack_name} (${pack.roast_date})`,
       data: points,
       borderColor: color,
       backgroundColor: color,
@@ -178,10 +178,42 @@ function renderGrindChart(canvasId, packsData) {
         }
       },
       plugins: {
-        legend: { labels: { font: { family: 'JetBrains Mono', size: 10 } } }
+        legend: {
+          position: 'bottom',
+          maxHeight: 75,
+          labels: {
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true,
+            padding: 6,
+            font: { family: 'JetBrains Mono', size: 9 }
+          }
+        }
       }
     }
   });
+}
+
+/**
+ * Gibt die passenden Tailwind-Farbklassen für den Score-Badge zurück
+ */
+function getScoreBadgeClass(score) {
+  const num = parseFloat(String(score).replace(',', '.'));
+  if (isNaN(num)) return 'bg-slate-100 text-slate-600 border-lab-border';
+  if (num <= 3.0) return 'bg-red-100 text-red-900 border-red-300 font-bold';
+  if (num <= 5.0) return 'bg-rose-100 text-rose-900 border-rose-300 font-bold';
+  if (num <= 7.0) return 'bg-orange-100 text-orange-900 border-orange-300 font-bold';
+  return 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
+}
+
+/**
+ * Gibt die passenden Tailwind-Farbklassen für den Röstgrad-Badge zurück
+ */
+function getRoastBadgeClass(roastLevel) {
+  const roast = (roastLevel || '').toLowerCase();
+  if (roast === 'light') return 'bg-amber-100 text-amber-900 border-amber-300 font-semibold';
+  if (roast === 'dark') return 'bg-slate-700 text-white border-slate-800 font-semibold';
+  return 'bg-orange-100/70 text-orange-950 border-orange-200 font-semibold'; // Medium Default
 }
 
 /**
