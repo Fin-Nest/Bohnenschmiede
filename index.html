@@ -156,6 +156,12 @@
           </div>
 
           <div>
+            <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Hersteller-Website (Link)</label>
+            <input type="url" id="bean-website" placeholder="https://roaster.de/shop/black-capera" 
+                   class="w-full bg-white border border-lab-border rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900">
+          </div>
+          
+          <div>
             <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Röstgrad</label>
             <select id="bean-roast" class="w-full bg-white border border-lab-border rounded-lg p-2 text-sm focus:outline-none">
               <option value="Medium">Medium</option>
@@ -321,6 +327,14 @@
           <div>
             <span id="modal-roaster" class="text-xs font-mono uppercase tracking-wider text-slate-400 block">Röster</span>
             <h2 id="modal-bean-name" class="text-lg font-bold text-slate-900 leading-tight">Bohnen Name</h2>
+            
+            <!-- NEU: DIRECT LINK BUTTON ZUR HERSTELLERSEITE -->
+            <div id="modal-website-container" class="hidden mt-1.5">
+              <a id="modal-website-btn" href="#" target="_blank" rel="noopener noreferrer" 
+                 class="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded border border-lab-border transition">
+                🌐 Hersteller-Website ↗
+              </a>
+            </div>
           </div>
         </div>
         <button id="modal-close-btn" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-1">✕</button>
@@ -328,6 +342,12 @@
 
       <form id="edit-bean-form" class="space-y-4">
         <input type="hidden" id="edit-config-id">
+
+        <!-- HERSTELLER LINK BEARBEITEN -->
+        <div class="pt-2 border-t border-lab-border">
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Hersteller-Website (Link) Bearbeiten</label>
+          <input type="url" id="edit-website" placeholder="https://..." class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+        </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
