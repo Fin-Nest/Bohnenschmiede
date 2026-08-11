@@ -520,7 +520,19 @@ function openDetailModal(configId) {
   document.getElementById('edit-config-id').value = item.id;
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
-  
+
+  // --- BILD IM MODAL ANZEIGEN ---
+  const imgContainer = document.getElementById('modal-image-container');
+  const imgEl = document.getElementById('modal-bean-image');
+
+  if (bean.image_url && imgContainer && imgEl) {
+    imgEl.src = bean.image_url;
+    imgContainer.classList.remove('hidden');
+  } else if (imgContainer) {
+    imgContainer.classList.add('hidden');
+  }
+
+  // Rest der Modal-Befüllung (Status, Score, Tasting Notes, DF64 Parameter)...
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
