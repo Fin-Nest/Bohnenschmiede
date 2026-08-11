@@ -301,17 +301,17 @@ function renderPinnedBeans(pinnedList) {
 
             <!-- Badges: Röstgrad, Mischung & SCORE (RATING) -->
             <div class="flex flex-wrap gap-1 mt-1">
-              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
-                ${escapeHtml(bean.roast_level || 'Medium')}
-              </span>
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
+  ${escapeHtml(bean.roast_level || 'Medium')}
+</span>
               <span class="text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
                 ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
               </span>
               ${item.personal_score ? `
-                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-yellow-100 rounded text-yellow-900 border border-yellow-300">
-                  ⭐ ${formatNumberDisplay(item.personal_score, 1)}
-                </span>
-              ` : ''}
+  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getScoreBadgeClass(item.personal_score)}">
+    ⭐ ${formatNumberDisplay(item.personal_score, 1)}
+  </span>
+` : ''}
             </div>
 
             <!-- Tasting Notes Badges -->
@@ -542,6 +542,56 @@ function initModalEvents() {
       if (shotLogModal) shotLogModal.classList.remove('hidden');
     }
   });
+
+  // SCORE STEPPER & VALIDIERUNG
+  const scoreInput = document.getElementById('edit-score');
+  const btnMinus = document.getElementById('btn-score-minus');
+  const btnPlus = document.getElementById('btn-score-plus');
+  const warningMsg = document.getElementById('score-warning-msg');
+
+  function validateAndAdjustScore() {
+    if (!scoreInput) return;
+    let valStr = scoreInput.value.replace(',', '.').trim();
+    if (valStr === '') {
+      if (warningMsg) warningMsg.classList.add('hidden');
+      return;
+    }
+
+    let val = parseFloat(valStr);
+    if (isNaN(val)) return;
+
+    if (val > 10.0) {
+      scoreInput.value = '10,0';
+      if (warningMsg) warningMsg.classList.remove('hidden');
+    } else if (val < 0) {
+      scoreInput.value = '0,0';
+      if (warningMsg) warningMsg.classList.add('hidden');
+    } else {
+      if (warningMsg) warningMsg.classList.add('hidden');
+    }
+  }
+
+  if (scoreInput) {
+    scoreInput.addEventListener('blur', validateAndAdjustScore);
+  }
+
+  if (btnMinus && scoreInput) {
+    btnMinus.addEventListener('click', () => {
+      let current = parseFloat(scoreInput.value.replace(',', '.')) || 0;
+      let next = Math.max(0, current - 0.5);
+      scoreInput.value = formatNumberDisplay(next, 1);
+      validateAndAdjustScore();
+    });
+  }
+
+  if (btnPlus && scoreInput) {
+    btnPlus.addEventListener('click', () => {
+      let current = parseFloat(scoreInput.value.replace(',', '.')) || 0;
+      let next = Math.min(10, current + 0.5);
+      scoreInput.value = formatNumberDisplay(next, 1);
+      validateAndAdjustScore();
+    });
+  }
 
   // Modus-Umschaltung Read-Only / Bearbeiten
   if (btnEnableEdit) {
@@ -1090,14 +1140,43 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-/**
- * Initialisiert die Funktionen im Setup-Tab
- */
 function initSetupTab() {
   const exportBtn = document.getElementById('btn-export-csv');
+  const importBtn = document.getElementById('btn-import-csv');
+  const importInput = document.getElementById('csv-import-input');
+
   if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-      exportBeansToCSV(userBeansData);
+    exportBtn.addEventListener('click', () => exportBeansToCSV(userBeansData));
+  }
+
+  if (importBtn && importInput) {
+    importBtn.addEventListener('click', () => {
+      const file = importInput.files[0];
+      if (!file) {
+        alert('Bitte wähle zuerst eine CSV-Datei aus.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target.result;
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importiere Daten...';
+
+        const result = await importBeansFromCSV(text);
+        
+        importBtn.disabled = false;
+        importBtn.textContent = '📤 CSV-Datei importieren';
+
+        if (result.success) {
+          alert(`${result.count} Bohnen erfolgreich importiert!`);
+          importInput.value = '';
+          await loadAndRenderBeans();
+        } else {
+          alert('Fehler beim Import: ' + result.error);
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
     });
   }
 }
