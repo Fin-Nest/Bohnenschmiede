@@ -313,41 +313,85 @@
     </div>
   </nav>
 
-  <!-- DETAIL & EDIT MODAL OVERLAY -->
+ <!-- DETAIL & EDIT MODAL OVERLAY -->
   <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="frosted-glass bg-white/95 max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-lab-border shadow-2xl p-5 space-y-5">
       
-      <!-- MODAL HEADER MIT BOHNE & PACKUNGSFOTO -->
+      <!-- MODAL HEADER (Mit Schließen-X und Stift-Symbol) -->
       <div class="flex justify-between items-start border-b border-lab-border pb-3">
-        <div class="flex gap-3 items-center">
-          <!-- Dynamischer Bild-Container im Modal -->
+        <div class="flex gap-3 items-center min-w-0">
           <div id="modal-image-container" class="hidden w-14 h-18 bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border flex-shrink-0">
             <img id="modal-bean-image" src="" alt="Packungsfoto" class="max-h-full max-w-full object-contain filter drop-shadow">
           </div>
-          <div>
-            <span id="modal-roaster" class="text-xs font-mono uppercase tracking-wider text-slate-400 block">Röster</span>
-            <h2 id="modal-bean-name" class="text-lg font-bold text-slate-900 leading-tight">Bohnen Name</h2>
-            
-            <!-- NEU: DIRECT LINK BUTTON ZUR HERSTELLERSEITE -->
-            <div id="modal-website-container" class="hidden mt-1.5">
+          <div class="min-w-0">
+            <span id="modal-roaster" class="text-xs font-mono uppercase tracking-wider text-slate-400 block truncate">Röster</span>
+            <h2 id="modal-bean-name" class="text-lg font-bold text-slate-900 leading-tight truncate">Bohnen Name</h2>
+            <div id="modal-website-container" class="hidden mt-1">
               <a id="modal-website-btn" href="#" target="_blank" rel="noopener noreferrer" 
-                 class="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded border border-lab-border transition">
-                🌐 Hersteller-Website ↗
+                 class="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-lab-border transition">
+                🌐 Website ↗
               </a>
             </div>
           </div>
         </div>
-        <button id="modal-close-btn" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-1">✕</button>
+
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <!-- STIFT-BUTTON ZUM SCHALTEN IN DEN EDIT-MODUS -->
+          <button id="btn-enable-edit" title="Bohne Bearbeiten" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
+            ✏️
+          </button>
+          <button id="modal-close-btn" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-2">✕</button>
+        </div>
       </div>
 
-      <form id="edit-bean-form" class="space-y-4">
-        <input type="hidden" id="edit-config-id">
-
-        <!-- HERSTELLER LINK BEARBEITEN -->
-        <div class="pt-2 border-t border-lab-border">
-          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Hersteller-Website (Link) Bearbeiten</label>
-          <input type="url" id="edit-website" placeholder="https://..." class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+      <!-- MODUS 1: REINE READ-ONLY DETAILS-ANSICHT -->
+      <div id="modal-view-mode" class="space-y-4">
+        
+        <!-- Badges (Rating, Röstgrad, Mischung) -->
+        <div class="flex flex-wrap gap-1.5">
+          <span id="view-status-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-700 border border-lab-border font-semibold">
+            📦 Im Bestand
+          </span>
+          <span id="view-roast-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-600 border border-lab-border">
+            Medium
+          </span>
+          <span id="view-blend-badge" class="text-xs font-mono px-2 py-1 bg-amber-50 rounded text-amber-800 border border-amber-200 font-semibold">
+            100% Arabica
+          </span>
+          <span id="view-score-badge" class="hidden text-xs font-mono px-2 py-1 bg-yellow-100 rounded text-yellow-900 border border-yellow-300 font-bold">
+            ⭐ 9,5
+          </span>
         </div>
+
+        <!-- Tasting Notes -->
+        <div id="view-tasting-notes-container" class="pt-2 border-t border-lab-border space-y-1">
+          <span class="text-[10px] font-mono uppercase text-slate-400 block">Tasting Notes</span>
+          <div id="view-tasting-notes-list" class="flex flex-wrap gap-1"></div>
+        </div>
+
+        <!-- Extraktions-Parameter (DF64) -->
+        <div class="pt-2 border-t border-lab-border space-y-3">
+          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Dial-In Parameter</h3>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50/90 p-3 rounded-lg border border-lab-border space-y-1">
+              <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Single Shot (8,0g)</span>
+              <div id="view-single-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
+              <div id="view-single-details" class="text-xs font-mono text-slate-500">- g | - s</div>
+            </div>
+
+            <div class="bg-slate-50/90 p-3 rounded-lg border border-slate-900/20 space-y-1">
+              <span class="text-[10px] font-mono font-bold text-slate-500 uppercase block">Double Shot (18,0g)</span>
+              <div id="view-double-grind" class="text-xl font-mono font-bold text-slate-900">-</div>
+              <div id="view-double-details" class="text-xs font-mono text-slate-500">- g | - s</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODUS 2: FORMULAR ZUM BEARBEITEN (ANFANGS VERSTECKT) -->
+      <form id="edit-bean-form" class="hidden space-y-4">
+        <input type="hidden" id="edit-config-id">
 
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -362,6 +406,98 @@
             <input type="text" id="edit-score" placeholder="9,5" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
           </div>
         </div>
+
+        <!-- HERSTELLER LINK BEARBEITEN -->
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Hersteller-Website (Link)</label>
+          <input type="url" id="edit-website" placeholder="https://..." class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+        </div>
+
+        <!-- PACKUNGSFOTO VERWALTEN -->
+        <div class="pt-2 border-t border-lab-border space-y-2">
+          <label class="block text-[10px] font-mono font-bold uppercase text-slate-700">Packungsfoto verwalten</label>
+          <div id="modal-image-preview-box" class="hidden flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-lab-border">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-14 bg-white rounded border border-lab-border overflow-hidden p-1 flex items-center justify-center">
+                <img id="modal-image-current-preview" src="" alt="Vorschau" class="max-h-full max-w-full object-contain filter drop-shadow">
+              </div>
+              <span class="text-xs font-mono text-slate-600">Aktuelles Foto</span>
+            </div>
+            <button type="button" id="btn-delete-modal-image" class="px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-mono font-semibold hover:bg-red-100 transition">
+              🗑️ Löschen
+            </button>
+          </div>
+
+          <input type="file" id="modal-bean-image-input" accept="image/*" 
+                 class="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-slate-900 file:text-white cursor-pointer">
+
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="modal-toggle-bg-removal" class="rounded border-lab-border text-slate-900 focus:ring-0 cursor-pointer">
+            <label for="modal-toggle-bg-removal" class="text-xs text-slate-600 select-none cursor-pointer">✨ KI-Hintergrund entfernen</label>
+          </div>
+        </div>
+
+        <!-- MISCHUNGSVERHÄLTNIS -->
+        <div class="pt-2 border-t border-lab-border">
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-[10px] font-mono text-slate-500 uppercase">Mischungsverhältnis Bearbeiten</label>
+            <span id="edit-blend-display" class="text-xs font-mono font-bold text-slate-900">100% Arabica</span>
+          </div>
+          <input type="range" id="edit-arabica-slider" min="0" max="100" value="100" step="5"
+                 class="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer">
+        </div>
+        
+        <!-- TASTING NOTES -->
+        <div class="pt-2 border-t border-lab-border">
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Tasting Notes Bearbeiten</label>
+          <div id="modal-tasting-tags-preset" class="flex flex-wrap gap-1.5 mb-2">
+            <button type="button" data-tag="Schokolade" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍫 Schokolade</button>
+            <button type="button" data-tag="Nuss" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌰 Nuss</button>
+            <button type="button" data-tag="Beere" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🫐 Beere</button>
+            <button type="button" data-tag="Zitrus" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍋 Zitrus</button>
+            <button type="button" data-tag="Steinobst" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍑 Steinobst</button>
+            <button type="button" data-tag="Blumig" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🌸 Blumig</button>
+            <button type="button" data-tag="Karamell" class="modal-tag-btn text-xs font-mono px-2 py-0.5 rounded-full border border-lab-border bg-white text-slate-600 hover:bg-slate-100 transition">🍯 Karamell</button>
+          </div>
+          <input type="text" id="edit-custom-notes" placeholder="Weitere Noten (kommagetrennt)" 
+                 class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-900">
+        </div>
+
+        <!-- MAHLGRADE -->
+        <div class="space-y-3 pt-2 border-t border-lab-border">
+          <h3 class="text-xs font-mono font-bold uppercase text-slate-700">DF64 Extraction Protocol</h3>
+          <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
+            <span class="text-xs font-mono font-semibold text-slate-600 block">Single Shot (8,0g In)</span>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="block text-[10px] font-mono text-slate-400">Mahlgrad</label><input type="text" id="edit-single-grind" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono"></div>
+              <div><label class="block text-[10px] font-mono text-slate-400">Yield (g)</label><input type="text" id="edit-single-yield" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono"></div>
+              <div><label class="block text-[10px] font-mono text-slate-400">Zeit (s)</label><input type="text" id="edit-single-time" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono"></div>
+            </div>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-lg border border-lab-border space-y-2">
+            <span class="text-xs font-mono font-semibold text-slate-600 block">Double Shot (18,0g In)</span>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="block text-[10px] font-mono text-slate-400">Mahlgrad</label><input type="text" id="edit-double-grind" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono"></div>
+              <div><label class="block text-[10px] font-mono text-slate-400">Yield (g)</label><input type="text" id="edit-double-yield" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono"></div>
+              <div><label class="block text-[10px] font-mono text-slate-400">Zeit (s)</label><input type="text" id="edit-double-time" class="w-full bg-white border border-lab-border rounded p-1.5 text-xs font-mono"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-3 border-t border-lab-border">
+          <button type="button" id="btn-delete-bean" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-mono font-semibold hover:bg-red-100 transition">
+            Löschen
+          </button>
+          <button type="button" id="btn-cancel-edit" class="px-3 py-2 bg-slate-100 text-slate-600 border border-lab-border rounded-lg text-xs font-mono font-semibold hover:bg-slate-200 transition">
+            Abbrechen
+          </button>
+          <button type="submit" class="flex-1 bg-slate-900 text-white text-xs font-mono py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
+            Speichern
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 <!-- EDIT-MODAL: BILD VERWALTEN & HOCHLADEN -->
         <div class="pt-3 border-t border-lab-border space-y-3">
           <label class="block text-[10px] font-mono font-bold uppercase text-slate-700">Packungsfoto verwalten</label>
