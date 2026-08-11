@@ -218,15 +218,22 @@ async function deleteUserBeanConfig(configId) {
 }
 
 /**
- * Aktualisiert die Stammdaten (z.B. Tasting Notes) einer Bohne in Tabelle 'beans'
+ * Aktualisiert die Stammdaten (z.B. Tasting Notes und Image URL) einer Bohne in Tabelle 'beans'
  */
 async function updateBeanMasterData(beanId, masterData) {
   try {
+    const updatePayload = {};
+    
+    if (masterData.tastingNotes !== undefined) {
+      updatePayload.tasting_notes = masterData.tastingNotes;
+    }
+    if (masterData.imageUrl !== undefined) {
+      updatePayload.image_url = masterData.imageUrl;
+    }
+
     const { data, error } = await supabaseClient
       .from('beans')
-      .update({
-        tasting_notes: masterData.tastingNotes
-      })
+      .update(updatePayload)
       .eq('id', beanId)
       .select();
 
