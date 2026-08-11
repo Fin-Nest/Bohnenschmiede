@@ -13,9 +13,9 @@ const ASSETS_TO_CACHE = [
   './assets/js/utils.js',
   './assets/js/supabase.js',
   './assets/js/app.js',
-  './icons/apple-touch-icon (1).png',
-  './icons/icon-192 (1).png',
-  './icons/icon-512 (1).png'
+  './icons/apple-touch-icon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 /**
