@@ -60,6 +60,7 @@ async function saveBeanToDatabase(formData) {
         name: formData.name,
         roaster: formData.roaster,
         roast_level: formData.roastLevel,
+        arabica_percentage: formData.arabicaPercentage !== undefined ? formData.arabicaPercentage : 100, // ⬅️ NEU
         tasting_notes: formData.tastingNotes || [],
         image_url: imageUrl
       }])
@@ -230,7 +231,10 @@ async function updateBeanMasterData(beanId, masterData) {
     if (masterData.imageUrl !== undefined) {
       updatePayload.image_url = masterData.imageUrl;
     }
-
+    if (masterData.arabicaPercentage !== undefined) {
+      updatePayload.arabica_percentage = masterData.arabicaPercentage;
+    }
+    
     const { data, error } = await supabaseClient
       .from('beans')
       .update(updatePayload)
