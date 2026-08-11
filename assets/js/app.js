@@ -354,7 +354,7 @@ function renderPinnedBeans(pinnedList) {
 }
 
 /**
- * Rendert Bestands-Kacheln inkl. Rating-Badge
+ * Rendert Bestands-Kacheln im kompakten Horizontal-Layout (Bild links, Details rechts)
  */
 function renderInventoryBeans(inventoryList) {
   const container = document.getElementById('inventory-container');
@@ -374,61 +374,84 @@ function renderInventoryBeans(inventoryList) {
     return `
       <div class="frosted-glass p-3.5 rounded-xl border border-lab-border flex flex-col justify-between space-y-3">
         
-        ${bean.image_url ? `
-          <div onclick="openDetailModal('${item.id}')" class="w-full aspect-[3/4] bg-slate-100/60 rounded-lg overflow-hidden flex items-center justify-center p-2 border border-lab-border/40 cursor-pointer">
-            <img src="${escapeHtml(bean.image_url)}" alt="${escapeHtml(bean.name)}" class="max-h-full max-w-full object-contain filter drop-shadow-md">
-          </div>
-        ` : ''}
-
-        <div>
-          <div class="flex justify-between items-start">
-            <span class="text-[10px] font-mono uppercase text-slate-400 truncate max-w-[130px]">${escapeHtml(bean.roaster)}</span>
-            <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
-                    title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
-                    class="text-xs p-1 rounded hover:bg-slate-100 ${item.is_pinned ? 'opacity-100' : 'opacity-30 hover:opacity-100'}">
-              📌
-            </button>
-          </div>
-          <h4 onclick="openDetailModal('${item.id}')" class="text-sm font-bold text-slate-900 leading-tight cursor-pointer hover:underline">
-            ${escapeHtml(bean.name)}
-          </h4>
-
-          <div class="flex flex-wrap gap-1 mt-1">
-            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
-              ${escapeHtml(bean.roast_level || 'Medium')}
-            </span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
-              ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
-            </span>
-            ${item.personal_score ? `
-              <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-yellow-100 rounded text-yellow-900 border border-yellow-300">
-                ⭐ ${formatNumberDisplay(item.personal_score, 1)}
-              </span>
-            ` : ''}
-          </div>
-
-          <!-- Tasting Notes Badges -->
-          ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
-            <div class="flex flex-wrap gap-1 mt-2">
-              ${bean.tasting_notes.map(note => `
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 border border-lab-border/60">
-                  ${escapeHtml(note)}
-                </span>
-              `).join('')}
+        <!-- OBERER BEREICH: BILD LINKS, STAMMDATEN & BADGES RECHTS -->
+        <div class="flex gap-3 items-start">
+          
+          <!-- Bild links (max 1/3 der Höhe, fester Rahmen) -->
+          ${bean.image_url ? `
+            <div onclick="openDetailModal('${item.id}')" 
+                 class="w-16 h-20 flex-shrink-0 bg-slate-100/60 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border/60 cursor-pointer">
+              <img src="${escapeHtml(bean.image_url)}" alt="${escapeHtml(bean.name)}" class="max-h-full max-w-full object-contain filter drop-shadow-md">
             </div>
           ` : ''}
+
+          <!-- Text-Inhalte & Badges rechts -->
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-start gap-1">
+              <div onclick="openDetailModal('${item.id}')" class="cursor-pointer min-w-0 flex-1">
+                <span class="text-[10px] font-mono uppercase text-slate-400 truncate block">${escapeHtml(bean.roaster)}</span>
+                <h4 class="text-sm font-bold text-slate-900 leading-tight hover:underline truncate">${escapeHtml(bean.name)}</h4>
+              </div>
+              
+              <!-- Pin Button -->
+              <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
+                      title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
+                      class="text-xs p-1 rounded hover:bg-slate-100 flex-shrink-0 ${item.is_pinned ? 'opacity-100' : 'opacity-30 hover:opacity-100'}">
+                📌
+              </button>
+            </div>
+
+            <!-- Badges: Röstgrad, Mischungsverhältnis & Rating -->
+            <div class="flex flex-wrap gap-1 mt-1.5">
+              <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
+                ${escapeHtml(bean.roast_level || 'Medium')}
+              </span>
+              <span class="text-[9px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
+                ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
+              </span>
+              ${item.personal_score ? `
+                <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-yellow-100 rounded text-yellow-900 border border-yellow-300">
+                  ⭐ ${formatNumberDisplay(item.personal_score, 1)}
+                </span>
+              ` : ''}
+            </div>
+
+            <!-- Tasting Notes Badges -->
+            ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
+              <div class="flex flex-wrap gap-1 mt-1.5">
+                ${bean.tasting_notes.map(note => `
+                  <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100/80 rounded text-slate-500 border border-lab-border/60">
+                    ${escapeHtml(note)}
+                  </span>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
         </div>
 
-        <div onclick="openDetailModal('${item.id}')" class="bg-white/60 p-2 rounded border border-lab-border/60 text-xs font-mono space-y-1 cursor-pointer">
-          <div class="flex justify-between text-slate-600">
-            <span>Single:</span>
-            <span class="font-bold text-slate-900">${formatNumberDisplay(item.single_grind_size)}</span>
+        <!-- UNTERER BEREICH: DF64 DIAL-IN PARAMETER (2-SPALTEN GRID) -->
+        <div onclick="openDetailModal('${item.id}')" class="bg-white/60 p-2 rounded border border-lab-border/60 text-xs font-mono grid grid-cols-2 gap-2 cursor-pointer pt-2 border-t border-lab-border/40">
+          <div>
+            <span class="text-[9px] font-mono text-slate-400 block uppercase">Single (8g)</span>
+            <div class="font-bold text-slate-900">
+              ${formatNumberDisplay(item.single_grind_size)} <span class="text-[10px] font-normal text-slate-500">DF64</span>
+            </div>
+            <div class="text-[10px] text-slate-500">
+              ${formatNumberDisplay(item.single_yield_out)}g | ${formatNumberDisplay(item.single_time_sec, 0)}s
+            </div>
           </div>
-          <div class="flex justify-between text-slate-600">
-            <span>Double:</span>
-            <span class="font-bold text-slate-900">${formatNumberDisplay(item.double_grind_size)}</span>
+
+          <div>
+            <span class="text-[9px] font-mono text-slate-400 block uppercase">Double (18g)</span>
+            <div class="font-bold text-slate-900">
+              ${formatNumberDisplay(item.double_grind_size)} <span class="text-[10px] font-normal text-slate-500">DF64</span>
+            </div>
+            <div class="text-[10px] text-slate-500">
+              ${formatNumberDisplay(item.double_yield_out)}g | ${formatNumberDisplay(item.double_time_sec, 0)}s
+            </div>
           </div>
         </div>
+
       </div>
     `;
   }).join('');
