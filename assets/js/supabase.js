@@ -420,3 +420,77 @@ async function updateBeanPackInDatabase(packId, updatedData) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Importiert Bohnen und Konfigurationen aus einer CSV-Datei
+ */
+async function importBeansFromCSV(csvText) {
+  try {
+    const lines = csvText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 2) throw new Error('CSV-Datei enthält keine Daten.');
+
+    // Tabellen-Header auflösen
+    const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+
+    let importedCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      // RegEx für kommaseparierten Text mit Anführungszeichen
+      const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
+      const row = {};
+      
+      headers.forEach((header, idx) => {
+        let val = values[idx] ? values[idx].trim() : '';
+        if (val.startsWith('"') && val.endsWith('"')) {
+          val = val.substring(1, val.length - 1).replace(/""/g, '"');
+        }
+        row[header] = val;
+      });
+
+      if (!row['Bohnen Name'] || !row['Röster']) continue;
+
+      const tastingNotesArr = row['Tasting Notes'] 
+        ? row['Tasting Notes'].split(';').map(n => n.trim()).filter(n => n.length > 0)
+        : [];
+
+      // 1. Bohne in 'beans' anlegen/suchen
+      const beanPayload = {
+        name: row['Bohnen Name'],
+        roaster: row['Röster'],
+        roast_level: row['Röstgrad'] || 'Medium',
+        arabica_percentage: parseInt(row['Arabica %'], 10) || 100,
+        tasting_notes: tastingNotesArr,
+        website_url: row['Website'] || null
+      };
+
+      const { data: beanData, error: beanErr } = await supabaseClient
+        .from('beans')
+        .insert([beanPayload])
+        .select()
+        .single();
+
+      if (beanErr) continue;
+
+      // 2. User-Konfiguration anlegen
+      const configPayload = {
+        bean_id: beanData.id,
+        status: row['Status'] === 'Wunschliste' ? 'wishlist' : 'inventory',
+        personal_score: row['Score'] ? parseFlexibleNumber(row['Score']) : null,
+        single_grind_size: row['Single Mahlgrad'] ? parseFlexibleNumber(row['Single Mahlgrad']) : null,
+        single_yield_out: row['Single Yield (g)'] ? parseFlexibleNumber(row['Single Yield (g)']) : null,
+        single_time_sec: row['Single Zeit (s)'] ? parseInt(row['Single Zeit (s)'], 10) : null,
+        double_grind_size: row['Double Mahlgrad'] ? parseFlexibleNumber(row['Double Mahlgrad']) : null,
+        double_yield_out: row['Double Yield (g)'] ? parseFlexibleNumber(row['Double Yield (g)']) : null,
+        double_time_sec: row['Double Zeit (s)'] ? parseInt(row['Double Zeit (s)'], 10) : null
+      };
+
+      await supabaseClient.from('user_bean_configs').insert([configPayload]);
+      importedCount++;
+    }
+
+    return { success: true, count: importedCount };
+  } catch (error) {
+    console.error('Fehler beim CSV-Import:', error);
+    return { success: false, error: error.message };
+  }
+}
