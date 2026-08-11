@@ -274,13 +274,28 @@
       </form>
     </section>
 
-    <!-- TAB 4: SETUP -->
+ <!-- TAB 4: SETUP -->
     <section id="tab-setup" class="hidden space-y-4">
-      <h2 class="text-xs uppercase tracking-widest font-semibold text-slate-500 font-mono">Setup & Daten-Export</h2>
-      <div class="frosted-glass p-5 rounded-xl border border-lab-border space-y-4">
-        <button id="btn-export-csv" class="w-full bg-slate-900 text-white font-mono text-sm py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
-          Daten als CSV exportieren
-        </button>
+      <h2 class="text-xs uppercase tracking-widest font-semibold text-slate-500 font-mono">Setup & Datensicherung</h2>
+      <div class="frosted-glass p-5 rounded-xl border border-lab-border space-y-5">
+        
+        <!-- Export -->
+        <div class="space-y-2">
+          <label class="block text-xs font-mono font-bold uppercase text-slate-700">Daten-Export</label>
+          <button id="btn-export-csv" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
+            📥 Alle Bohnen als CSV exportieren
+          </button>
+        </div>
+
+        <!-- Import -->
+        <div class="space-y-2 pt-4 border-t border-lab-border">
+          <label class="block text-xs font-mono font-bold uppercase text-slate-700">Daten-Import (CSV)</label>
+          <input type="file" id="csv-import-input" accept=".csv" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-slate-900 file:text-white cursor-pointer">
+          <button id="btn-import-csv" class="w-full bg-slate-100 text-slate-800 border border-lab-border font-mono text-xs py-2 rounded-lg font-semibold hover:bg-slate-200 transition mt-2">
+            📤 CSV-Datei importieren
+          </button>
+        </div>
+
       </div>
     </section>
 
@@ -415,7 +430,7 @@
       <form id="edit-bean-form" class="hidden space-y-4">
         <input type="hidden" id="edit-config-id">
 
-        <div class="grid grid-cols-2 gap-3">
+       <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Status</label>
             <select id="edit-status" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
@@ -423,10 +438,21 @@
               <option value="wishlist">📋 Wunschliste</option>
             </select>
           </div>
+
+          <!-- Score Stepper 0,5er Schritte -->
           <div>
-            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Score (1-10)</label>
-            <input type="text" id="edit-score" placeholder="9,5" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Score (max. 10,0)</label>
+            <div class="flex items-center gap-1">
+              <button type="button" id="btn-score-minus" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-lab-border rounded text-xs font-mono font-bold">-</button>
+              <input type="text" id="edit-score" placeholder="9,5" class="w-full text-center bg-white border border-lab-border rounded p-1.5 text-xs font-mono font-bold">
+              <button type="button" id="btn-score-plus" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-lab-border rounded text-xs font-mono font-bold">+</button>
+            </div>
           </div>
+        </div>
+
+        <!-- Warnung bei Ungültigem Score -->
+        <div id="score-warning-msg" class="hidden text-[10px] font-mono text-red-600 bg-red-50 p-1.5 rounded border border-red-200">
+          ⚠️ Maximal 10,0 Punkte möglich! Wert wurde angepasst.
         </div>
 
         <div>
