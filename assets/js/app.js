@@ -3,10 +3,10 @@
  */
 
 let userBeansData = [];
-let processedImageFile = null; // Speichert das verarbeitete Bild-File/Blob
-let selectedTastingNotes = []; // Speichert die aktuell aktivierten Tags
-let modalSelectedTastingNotes = []; // Speichert die im Modal gewählten Tags
-let modalProcessedImageFile = null; // Speichert ein neu ausgewähltes Bild im Edit-Modal
+let processedImageFile = null;
+let selectedTastingNotes = [];
+let modalSelectedTastingNotes = [];
+let modalProcessedImageFile = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initImageUploadHandler();
   initTastingNotesHandler();
   initModalTastingNotesHandler();
-  initBlendSliderHandler(); // ⬅️ Aktiviert Live-Berechnung der Regler
+  initBlendSliderHandler();
   initSearchAndFilter();
   initModalEvents();
   initSetupTab();
@@ -139,6 +139,7 @@ function initAddBeanForm() {
         : [];
 
       const allTastingNotes = [...new Set([...selectedTastingNotes, ...customNotesArray])];
+      const websiteUrlInput = document.getElementById('bean-website') ? document.getElementById('bean-website').value.trim() : '';
 
       const formData = {
         status: form.querySelector('input[name="status"]:checked').value,
@@ -146,6 +147,7 @@ function initAddBeanForm() {
         roaster: document.getElementById('bean-roaster').value,
         roastLevel: document.getElementById('bean-roast').value,
         arabicaPercentage: parseInt(document.getElementById('bean-arabica-slider').value, 10),
+        websiteUrl: websiteUrlInput, // ⬅️ NEU
         tastingNotes: allTastingNotes,
         imageFile: processedImageFile,
 
@@ -173,6 +175,7 @@ function initAddBeanForm() {
         document.getElementById('image-preview-container').classList.add('hidden');
         document.getElementById('bean-arabica-slider').value = 100;
         document.getElementById('bean-blend-display').textContent = '100% Arabica';
+        if (document.getElementById('bean-website')) document.getElementById('bean-website').value = '';
 
         await loadAndRenderBeans();
         document.querySelector('[data-tab="dashboard"]').click();
@@ -252,7 +255,7 @@ function filterAndRenderBeans() {
 }
 
 /**
- * Rendert Hero-Kacheln (Angepinnt) inkl. Packungsfoto
+ * Rendert Hero-Kacheln (Angepinnt) inkl. Rating-Badge
  */
 function renderPinnedBeans(pinnedList) {
   const container = document.getElementById('pinned-beans-container');
@@ -296,7 +299,22 @@ function renderPinnedBeans(pinnedList) {
               </button>
             </div>
 
-            <!-- Tasting Notes Badges im Hero-Bereich -->
+            <!-- Badges: Röstgrad, Mischung & SCORE (RATING) -->
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
+                ${escapeHtml(bean.roast_level || 'Medium')}
+              </span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
+                ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
+              </span>
+              ${item.personal_score ? `
+                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-yellow-100 rounded text-yellow-900 border border-yellow-300">
+                  ⭐ ${formatNumberDisplay(item.personal_score, 1)}
+                </span>
+              ` : ''}
+            </div>
+
+            <!-- Tasting Notes Badges -->
             ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
               <div class="flex flex-wrap gap-1 mt-1.5">
                 ${bean.tasting_notes.map(note => `
@@ -336,7 +354,7 @@ function renderPinnedBeans(pinnedList) {
 }
 
 /**
- * Rendert Bestands-Kacheln im 3:4 Grid
+ * Rendert Bestands-Kacheln inkl. Rating-Badge
  */
 function renderInventoryBeans(inventoryList) {
   const container = document.getElementById('inventory-container');
@@ -374,14 +392,22 @@ function renderInventoryBeans(inventoryList) {
           <h4 onclick="openDetailModal('${item.id}')" class="text-sm font-bold text-slate-900 leading-tight cursor-pointer hover:underline">
             ${escapeHtml(bean.name)}
           </h4>
-          <span class="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
-            ${escapeHtml(bean.roast_level || 'Medium')}
-          </span>
-          <span class="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
-            ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
-          </span>
 
-          <!-- Tasting Notes Badges auf den Kacheln -->
+          <div class="flex flex-wrap gap-1 mt-1">
+            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
+              ${escapeHtml(bean.roast_level || 'Medium')}
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
+              ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
+            </span>
+            ${item.personal_score ? `
+              <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-yellow-100 rounded text-yellow-900 border border-yellow-300">
+                ⭐ ${formatNumberDisplay(item.personal_score, 1)}
+              </span>
+            ` : ''}
+          </div>
+
+          <!-- Tasting Notes Badges -->
           ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
             <div class="flex flex-wrap gap-1 mt-2">
               ${bean.tasting_notes.map(note => `
@@ -461,7 +487,6 @@ function initModalEvents() {
     closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
   }
 
-  // --- NEUES BILD IM MODAL AUSWÄHLEN & KI-FREISTELLEN ---
   if (modalFileInput) {
     modalFileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -484,7 +509,6 @@ function initModalEvents() {
     });
   }
 
-  // --- BILD DIREKT LÖSCHEN BUTTON ---
   if (deleteImageBtn) {
     deleteImageBtn.addEventListener('click', async () => {
       const configId = document.getElementById('edit-config-id').value;
@@ -504,7 +528,6 @@ function initModalEvents() {
     });
   }
 
-  // --- MODAL SPEICHERN ---
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -526,6 +549,7 @@ function initModalEvents() {
         : [];
       const updatedTastingNotes = [...new Set([...modalSelectedTastingNotes, ...customNotesArray])];
       const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').value, 10);
+      const updatedWebsiteUrl = document.getElementById('edit-website') ? document.getElementById('edit-website').value.trim() : '';
 
       const updatedData = {
         status: document.getElementById('edit-status').value,
@@ -543,7 +567,8 @@ function initModalEvents() {
       if (result.success && item && item.beans) {
         const masterPayload = { 
           tastingNotes: updatedTastingNotes,
-          arabicaPercentage: updatedArabica
+          arabicaPercentage: updatedArabica,
+          websiteUrl: updatedWebsiteUrl // ⬅️ NEU
         };
         if (newImageUrl !== undefined) {
           masterPayload.imageUrl = newImageUrl;
@@ -579,7 +604,7 @@ function initModalEvents() {
 }
 
 /**
- * Öffnet das Modal und befüllt alle Felder inkl. Bild-Vorschau
+ * Öffnet das Modal und befüllt alle Felder
  */
 function openDetailModal(configId) {
   const item = userBeansData.find(b => b.id === configId);
@@ -596,7 +621,23 @@ function openDetailModal(configId) {
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
 
-  // --- BILD-VORSCHAU UND HEADER-BILD STEURN ---
+  // --- HERSTELLER WEBSITE-LINK BUTTON IM MODAL ---
+  const websiteContainer = document.getElementById('modal-website-container');
+  const websiteBtn = document.getElementById('modal-website-btn');
+  const editWebsiteInput = document.getElementById('edit-website');
+
+  if (bean.website_url && websiteContainer && websiteBtn) {
+    websiteBtn.href = bean.website_url;
+    websiteContainer.classList.remove('hidden');
+  } else if (websiteContainer) {
+    websiteContainer.classList.add('hidden');
+  }
+
+  if (editWebsiteInput) {
+    editWebsiteInput.value = bean.website_url || '';
+  }
+
+  // --- BILD-VORSCHAU STEUERN ---
   const previewBox = document.getElementById('modal-image-preview-box');
   const currentPreviewImg = document.getElementById('modal-image-current-preview');
   const headerImgContainer = document.getElementById('modal-image-container');
@@ -612,11 +653,11 @@ function openDetailModal(configId) {
     if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // --- STATUS & SCORE BEFÜLLEN ---
+  // STATUS & SCORE
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
-  // --- MISCHUNGSVERHÄLTNIS SLIDER IM MODAL SETZEN ---
+  // MISCHUNGSVERHÄLTNIS
   const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
   const editSlider = document.getElementById('edit-arabica-slider');
   const editDisplay = document.getElementById('edit-blend-display');
@@ -624,7 +665,7 @@ function openDetailModal(configId) {
   if (editSlider) editSlider.value = arabicaVal;
   if (editDisplay) editDisplay.textContent = formatBlendText(arabicaVal);
 
-  // --- TASTING NOTES BEFÜLLEN & UI-STATUS SETZEN ---
+  // TASTING NOTES
   const existingNotes = bean.tasting_notes || [];
   modalSelectedTastingNotes = [];
   const presetTags = ['Schokolade', 'Nuss', 'Beere', 'Zitrus', 'Steinobst', 'Blumig', 'Karamell'];
@@ -650,7 +691,7 @@ function openDetailModal(configId) {
   const customNotesEl = document.getElementById('edit-custom-notes');
   if (customNotesEl) customNotesEl.value = customNotes.join(', ');
 
-  // --- DF64 PARAMETER BEFÜLLEN ---
+  // DF64 PARAMETER
   document.getElementById('edit-single-grind').value = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '';
   document.getElementById('edit-single-yield').value = item.single_yield_out ? formatNumberDisplay(item.single_yield_out, 1) : '';
   document.getElementById('edit-single-time').value = item.single_time_sec ? formatNumberDisplay(item.single_time_sec, 0) : '';
