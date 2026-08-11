@@ -2,16 +2,20 @@
  * BOHNENSCHMIEDE - SERVICE WORKER (OFFLINE CACHING)
  */
 
-const CACHE_NAME = 'bohnenschmiede-v8';
+// Versionsnummer erhöhen, damit der Browser den alten Cache verwirft und neu lädt
+const CACHE_NAME = 'bohnenschmiede-v31';
 
-// Nur lokale App-Shell-Dateien zwischenspeichern
+// Nur lokale App-Shell-Dateien & neue Icons zwischenspeichern
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './assets/js/utils.js',
   './assets/js/supabase.js',
-  './assets/js/app.js'
+  './assets/js/app.js',
+  './icons/apple-touch-icon (1).png',
+  './icons/icon-192 (1).png',
+  './icons/icon-512 (1).png'
 ];
 
 /**
