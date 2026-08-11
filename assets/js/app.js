@@ -1,4 +1,4 @@
-/**
+  /**
  * BOHNENSCHMIEDE - MAIN APP CONTROLLER
  */
 
@@ -145,6 +145,7 @@ function initAddBeanForm() {
         name: document.getElementById('bean-name').value,
         roaster: document.getElementById('bean-roaster').value,
         roastLevel: document.getElementById('bean-roast').value,
+        arabicaPercentage: parseInt(document.getElementById('bean-arabica-slider').value, 10), // ⬅️ NEU
         tastingNotes: allTastingNotes,
         imageFile: processedImageFile,
 
@@ -170,6 +171,8 @@ function initAddBeanForm() {
         resetTastingNotesUI();
 
         document.getElementById('image-preview-container').classList.add('hidden');
+        document.getElementById('bean-arabica-slider').value = 100;
+        document.getElementById('bean-blend-display').textContent = '100% Arabica';
 
         await loadAndRenderBeans();
         document.querySelector('[data-tab="dashboard"]').click();
@@ -374,7 +377,10 @@ function renderInventoryBeans(inventoryList) {
           <span class="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
             ${escapeHtml(bean.roast_level || 'Medium')}
           </span>
-
+          <span class="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
+  ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
+</span>
+  
           <!-- Tasting Notes Badges auf den Kacheln -->
           ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
             <div class="flex flex-wrap gap-1 mt-2">
@@ -481,6 +487,20 @@ function initModalEvents() {
     });
   }
 
+const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').value, 10);
+
+      // Beim Speichern an updateBeanMasterData übergeben:
+      if (result.success && item && item.beans) {
+        const masterPayload = { 
+          tastingNotes: updatedTastingNotes,
+          arabicaPercentage: updatedArabica // ⬅️ NEU
+        };
+        if (newImageUrl !== undefined) {
+          masterPayload.imageUrl = newImageUrl;
+        }
+        await updateBeanMasterData(item.beans.id, masterPayload);
+      }
+  
   // --- BILD DIREKT LÖSCHEN BUTTON ---
   if (deleteImageBtn) {
     deleteImageBtn.addEventListener('click', async () => {
@@ -595,6 +615,14 @@ function openDetailModal(configId) {
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
 
+// Mischungsverhältnis im Modal setzen
+  const arabicaVal = bean.arabica_percentage !== undefined && bean.arabica_percentage !== null ? bean.arabica_percentage : 100;
+  const editSlider = document.getElementById('edit-arabica-slider');
+  const editDisplay = document.getElementById('edit-blend-display');
+  
+  if (editSlider) editSlider.value = arabicaVal;
+  if (editDisplay) editDisplay.textContent = formatBlendText(arabicaVal);
+  
   // --- BILD-VORSCHAU UND LÖSCHEN-BUTTON IM MODAL STEUREN ---
   const previewBox = document.getElementById('modal-image-preview-box');
   const currentPreviewImg = document.getElementById('modal-image-current-preview');
@@ -713,4 +741,51 @@ function initModalTastingNotesHandler() {
       }
     });
   });
+}
+
+/**
+ * Wandelt einen Prozentwert für Arabica in lesbaren Text um.
+ * Fängt ungültige Werte oder null ab und setzt standardmäßig 100% Arabica.
+ *
+ * @param {number|string|null} arabicaVal - Der Prozentwert für Arabica (0 bis 100)
+ * @returns {string} Formatierter Text (z.B. "100% Arabica" oder "80% Arabica / 20% Robusta")
+ */
+function formatBlendText(arabicaVal) {
+  let arabica = parseInt(arabicaVal, 10);
+  
+  // Falls die Umwandlung fehlschlägt (NaN) oder der Wert ungültig ist, Fallback auf 100%
+  if (isNaN(arabica)) {
+    arabica = 100;
+  }
+
+  // Grenzen zwischen 0 und 100 sicherstellen
+  arabica = Math.max(0, Math.min(100, arabica));
+  const robusta = 100 - arabica;
+
+  if (arabica === 100) return '100% Arabica';
+  if (arabica === 0) return '100% Robusta';
+  return `${arabica}% Arabica / ${robusta}% Robusta`;
+}
+
+/**
+ * Steuert die Live-Textanzeige bei Bewegung der Schieberegler
+ */
+function initBlendSliderHandler() {
+  const addSlider = document.getElementById('bean-arabica-slider');
+  const addDisplay = document.getElementById('bean-blend-display');
+
+  if (addSlider && addDisplay) {
+    addSlider.addEventListener('input', (e) => {
+      addDisplay.textContent = formatBlendText(e.target.value);
+    });
+  }
+
+  const editSlider = document.getElementById('edit-arabica-slider');
+  const editDisplay = document.getElementById('edit-blend-display');
+
+  if (editSlider && editDisplay) {
+    editSlider.addEventListener('input', (e) => {
+      editDisplay.textContent = formatBlendText(e.target.value);
+    });
+  }
 }
