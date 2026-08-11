@@ -505,7 +505,27 @@ function initModalEvents() {
   const deleteImageBtn = document.getElementById('btn-delete-modal-image');
   const modalFileInput = document.getElementById('modal-bean-image-input');
   const modalBgToggle = document.getElementById('modal-toggle-bg-removal');
+const btnEnableEdit = document.getElementById('btn-enable-edit');
+  const btnCancelEdit = document.getElementById('btn-cancel-edit');
+  const viewModeEl = document.getElementById('modal-view-mode');
 
+  // Klick auf Stift (✏️): In den Bearbeiten-Modus schalten
+  if (btnEnableEdit) {
+    btnEnableEdit.addEventListener('click', () => {
+      if (viewModeEl) viewModeEl.classList.add('hidden');
+      if (editForm) editForm.classList.remove('hidden');
+      if (btnEnableEdit) btnEnableEdit.classList.add('hidden');
+    });
+  }
+
+  // Klick auf Abbrechen: Zurück zur Read-Only Ansicht
+  if (btnCancelEdit) {
+    btnCancelEdit.addEventListener('click', () => {
+      if (editForm) editForm.classList.add('hidden');
+      if (viewModeEl) viewModeEl.classList.remove('hidden');
+      if (btnEnableEdit) btnEnableEdit.classList.remove('hidden');
+    });
+  }
   if (closeBtn) {
     closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
   }
@@ -629,6 +649,9 @@ function initModalEvents() {
 /**
  * Öffnet das Modal und befüllt alle Felder
  */
+/**
+ * Öffnet das Modal im Read-Only Ansichtsmodus und befüllt alle Felder
+ */
 function openDetailModal(configId) {
   const item = userBeansData.find(b => b.id === configId);
   if (!item) return;
@@ -636,15 +659,26 @@ function openDetailModal(configId) {
   const bean = item.beans || {};
   const modal = document.getElementById('detail-modal');
 
+  // 1. Standardmäßig immer im Ansichtsmodus (Read-Only) starten
+  const viewModeEl = document.getElementById('modal-view-mode');
+  const editForm = document.getElementById('edit-bean-form');
+  const btnEnableEdit = document.getElementById('btn-enable-edit');
+
+  if (viewModeEl) viewModeEl.classList.remove('hidden');
+  if (editForm) editForm.classList.add('hidden');
+  if (btnEnableEdit) btnEnableEdit.classList.remove('hidden');
+
+  // Inputs im Edit-Formular zurücksetzen
   modalProcessedImageFile = null;
   const modalFileInput = document.getElementById('modal-bean-image-input');
   if (modalFileInput) modalFileInput.value = '';
 
+  // Header & Stammdaten
   document.getElementById('edit-config-id').value = item.id;
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
 
-  // --- HERSTELLER WEBSITE-LINK BUTTON IM MODAL ---
+  // Website-Link Button
   const websiteContainer = document.getElementById('modal-website-container');
   const websiteBtn = document.getElementById('modal-website-btn');
   const editWebsiteInput = document.getElementById('edit-website');
@@ -655,12 +689,9 @@ function openDetailModal(configId) {
   } else if (websiteContainer) {
     websiteContainer.classList.add('hidden');
   }
+  if (editWebsiteInput) editWebsiteInput.value = bean.website_url || '';
 
-  if (editWebsiteInput) {
-    editWebsiteInput.value = bean.website_url || '';
-  }
-
-  // --- BILD-VORSCHAU STEUERN ---
+  // Packungsfoto
   const previewBox = document.getElementById('modal-image-preview-box');
   const currentPreviewImg = document.getElementById('modal-image-current-preview');
   const headerImgContainer = document.getElementById('modal-image-container');
@@ -676,19 +707,56 @@ function openDetailModal(configId) {
     if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // STATUS & SCORE
+  // --- READ-ONLY ANSICHT BEFÜLLEN (#modal-view-mode) ---
+  const viewStatus = document.getElementById('view-status-badge');
+  if (viewStatus) viewStatus.textContent = item.status === 'wishlist' ? '📋 Wunschliste' : '📦 Im Bestand';
+
+  const viewRoast = document.getElementById('view-roast-badge');
+  if (viewRoast) viewRoast.textContent = bean.roast_level || 'Medium';
+
+  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
+  const viewBlend = document.getElementById('view-blend-badge');
+  if (viewBlend) viewBlend.textContent = formatBlendText(arabicaVal);
+
+  const viewScore = document.getElementById('view-score-badge');
+  if (item.personal_score) {
+    viewScore.textContent = `⭐ ${formatNumberDisplay(item.personal_score, 1)}`;
+    viewScore.classList.remove('hidden');
+  } else {
+    viewScore.classList.add('hidden');
+  }
+
+  // Tasting Notes Read-Only Liste
+  const viewNotesList = document.getElementById('view-tasting-notes-list');
+  if (viewNotesList) {
+    if (bean.tasting_notes && bean.tasting_notes.length > 0) {
+      viewNotesList.innerHTML = bean.tasting_notes.map(note => `
+        <span class="text-xs font-mono px-2 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
+          ${escapeHtml(note)}
+        </span>
+      `).join('');
+      document.getElementById('view-tasting-notes-container').classList.remove('hidden');
+    } else {
+      document.getElementById('view-tasting-notes-container').classList.add('hidden');
+    }
+  }
+
+  // Extraktions-Parameter Read-Only
+  document.getElementById('view-single-grind').textContent = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '-';
+  document.getElementById('view-single-details').textContent = `${formatNumberDisplay(item.single_yield_out)}g | ${formatNumberDisplay(item.single_time_sec, 0)}s`;
+
+  document.getElementById('view-double-grind').textContent = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '-';
+  document.getElementById('view-double-details').textContent = `${formatNumberDisplay(item.double_yield_out)}g | ${formatNumberDisplay(item.double_time_sec, 0)}s`;
+
+  // --- FORMULAR-FELDER BEFÜLLEN FOR EDIT MODE ---
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
-  // MISCHUNGSVERHÄLTNIS
-  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
   const editSlider = document.getElementById('edit-arabica-slider');
   const editDisplay = document.getElementById('edit-blend-display');
-  
   if (editSlider) editSlider.value = arabicaVal;
   if (editDisplay) editDisplay.textContent = formatBlendText(arabicaVal);
 
-  // TASTING NOTES
   const existingNotes = bean.tasting_notes || [];
   modalSelectedTastingNotes = [];
   const presetTags = ['Schokolade', 'Nuss', 'Beere', 'Zitrus', 'Steinobst', 'Blumig', 'Karamell'];
@@ -714,7 +782,6 @@ function openDetailModal(configId) {
   const customNotesEl = document.getElementById('edit-custom-notes');
   if (customNotesEl) customNotesEl.value = customNotes.join(', ');
 
-  // DF64 PARAMETER
   document.getElementById('edit-single-grind').value = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '';
   document.getElementById('edit-single-yield').value = item.single_yield_out ? formatNumberDisplay(item.single_yield_out, 1) : '';
   document.getElementById('edit-single-time').value = item.single_time_sec ? formatNumberDisplay(item.single_time_sec, 0) : '';
@@ -725,7 +792,6 @@ function openDetailModal(configId) {
 
   modal.classList.remove('hidden');
 }
-
 /**
  * Verschiebt Bohne von der Wunschliste in den Bestand
  */
