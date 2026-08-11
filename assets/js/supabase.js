@@ -422,41 +422,49 @@ async function updateBeanPackInDatabase(packId, updatedData) {
 }
 
 /**
- * Importiert Bohnen und Konfigurationen aus einer CSV-Datei
+ * Importiert Bohnen und Konfigurationen aus einer CSV-Datei (unterstützt ';' und ',' Trennzeichen)
  */
 async function importBeansFromCSV(csvText) {
   try {
-    const lines = csvText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length < 2) throw new Error('CSV-Datei enthält keine Daten.');
+    const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 2) throw new Error('Die CSV-Datei ist leer oder enthält keine Datenzeilen.');
 
-    // Tabellen-Header auflösen
-    const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+    // Automatische Erkennung des Trennzeichens (; oder ,)
+    const delimiter = lines[0].includes(';') ? ';' : ',';
+
+    // Header-Zeile auflösen
+    const headers = lines[0].split(delimiter).map(h => h.replace(/^"|"$/g, '').trim());
 
     let importedCount = 0;
+    const errors = [];
 
     for (let i = 1; i < lines.length; i++) {
-      // RegEx für kommaseparierten Text mit Anführungszeichen
-      const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
+      const line = lines[i];
+      if (!line) continue;
+
+      const values = line.split(delimiter).map(v => v.replace(/^"|"$/g, '').trim());
       const row = {};
-      
+
       headers.forEach((header, idx) => {
-        let val = values[idx] ? values[idx].trim() : '';
-        if (val.startsWith('"') && val.endsWith('"')) {
-          val = val.substring(1, val.length - 1).replace(/""/g, '"');
-        }
-        row[header] = val;
+        row[header] = values[idx] || '';
       });
 
-      if (!row['Bohnen Name'] || !row['Röster']) continue;
+      const beanName = row['Bohnen Name'] || row['Name'];
+      const roaster = row['Röster'] || row['Roaster'];
+
+      if (!beanName || !roaster) {
+        console.warn(`Zeile ${i + 1} übersprungen: Name oder Röster fehlt.`, row);
+        continue;
+      }
 
       const tastingNotesArr = row['Tasting Notes'] 
         ? row['Tasting Notes'].split(';').map(n => n.trim()).filter(n => n.length > 0)
         : [];
 
-      // 1. Bohne in 'beans' anlegen/suchen
+      // 1. Bohne in 'beans' speichern
       const beanPayload = {
-        name: row['Bohnen Name'],
-        roaster: row['Röster'],
+        name: beanName,
+        roaster: roaster,
         roast_level: row['Röstgrad'] || 'Medium',
         arabica_percentage: parseInt(row['Arabica %'], 10) || 100,
         tasting_notes: tastingNotesArr,
@@ -469,12 +477,16 @@ async function importBeansFromCSV(csvText) {
         .select()
         .single();
 
-      if (beanErr) continue;
+      if (beanErr) {
+        console.error(`Fehler beim Erstellen der Bohne "${beanName}":`, beanErr);
+        errors.push(`${beanName}: ${beanErr.message}`);
+        continue;
+      }
 
-      // 2. User-Konfiguration anlegen
+      // 2. User Bean Config speichern
       const configPayload = {
         bean_id: beanData.id,
-        status: row['Status'] === 'Wunschliste' ? 'wishlist' : 'inventory',
+        status: (row['Status'] || '').toLowerCase().includes('wunsch') ? 'wishlist' : 'inventory',
         personal_score: row['Score'] ? parseFlexibleNumber(row['Score']) : null,
         single_grind_size: row['Single Mahlgrad'] ? parseFlexibleNumber(row['Single Mahlgrad']) : null,
         single_yield_out: row['Single Yield (g)'] ? parseFlexibleNumber(row['Single Yield (g)']) : null,
@@ -484,8 +496,20 @@ async function importBeansFromCSV(csvText) {
         double_time_sec: row['Double Zeit (s)'] ? parseInt(row['Double Zeit (s)'], 10) : null
       };
 
-      await supabaseClient.from('user_bean_configs').insert([configPayload]);
-      importedCount++;
+      const { error: configErr } = await supabaseClient
+        .from('user_bean_configs')
+        .insert([configPayload]);
+
+      if (configErr) {
+        console.error(`Fehler bei Konfiguration von "${beanName}":`, configErr);
+        errors.push(`${beanName} (Config): ${configErr.message}`);
+      } else {
+        importedCount++;
+      }
+    }
+
+    if (importedCount === 0 && errors.length > 0) {
+      return { success: false, error: errors.join(' | ') };
     }
 
     return { success: true, count: importedCount };
