@@ -791,6 +791,21 @@ function openDetailModal(configId) {
   document.getElementById('edit-double-time').value = item.double_time_sec ? formatNumberDisplay(item.double_time_sec, 0) : '';
 
   modal.classList.remove('hidden');
+
+  // Innerhalb von openDetailModal(configId) am Ende einfügen:
+  if (item && item.beans) {
+    fetchPacksAndLogsForBean(item.beans.id).then(res => {
+      if (res.success && res.data) {
+        // Diagramm rendern
+        renderGrindChart('grind-chart', res.data);
+
+        // Historische Empfehlung berechnen & anzeigen
+        const recText = calculateHistoricalRecommendation(res.data);
+        const recBox = document.getElementById('historical-recommendation-text');
+        if (recBox) recBox.textContent = recText;
+      }
+    });
+  }
 }
 /**
  * Verschiebt Bohne von der Wunschliste in den Bestand
