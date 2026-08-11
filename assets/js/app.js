@@ -1,4 +1,4 @@
-  /**
+/**
  * BOHNENSCHMIEDE - MAIN APP CONTROLLER
  */
 
@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initAddBeanForm();
   initImageUploadHandler();
   initTastingNotesHandler();
-  initModalTastingNotesHandler(); // ⬅️ Aktiviert Klicks auf die Modal-Tags
+  initModalTastingNotesHandler();
+  initBlendSliderHandler(); // ⬅️ Aktiviert Live-Berechnung der Regler
   initSearchAndFilter();
   initModalEvents();
   initSetupTab();
@@ -53,7 +54,6 @@ function initTabNavigation() {
       button.classList.remove('text-slate-500');
       button.classList.add('text-slate-900', 'font-semibold');
 
-      // Beim Wechsel auf Dashboard oder Wunschliste Daten frisch aus Supabase laden
       if (targetTab === 'dashboard' || targetTab === 'wishlist') {
         await loadAndRenderBeans();
       }
@@ -145,7 +145,7 @@ function initAddBeanForm() {
         name: document.getElementById('bean-name').value,
         roaster: document.getElementById('bean-roaster').value,
         roastLevel: document.getElementById('bean-roast').value,
-        arabicaPercentage: parseInt(document.getElementById('bean-arabica-slider').value, 10), // ⬅️ NEU
+        arabicaPercentage: parseInt(document.getElementById('bean-arabica-slider').value, 10),
         tastingNotes: allTastingNotes,
         imageFile: processedImageFile,
 
@@ -378,9 +378,9 @@ function renderInventoryBeans(inventoryList) {
             ${escapeHtml(bean.roast_level || 'Medium')}
           </span>
           <span class="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
-  ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
-</span>
-  
+            ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
+          </span>
+
           <!-- Tasting Notes Badges auf den Kacheln -->
           ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
             <div class="flex flex-wrap gap-1 mt-2">
@@ -448,9 +448,6 @@ function renderWishlistBeans(wishlistList) {
 /**
  * Modal Event-Handling
  */
-/**
- * Modal Event-Handling
- */
 function initModalEvents() {
   const modal = document.getElementById('detail-modal');
   const closeBtn = document.getElementById('modal-close-btn');
@@ -487,20 +484,6 @@ function initModalEvents() {
     });
   }
 
-const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').value, 10);
-
-      // Beim Speichern an updateBeanMasterData übergeben:
-      if (result.success && item && item.beans) {
-        const masterPayload = { 
-          tastingNotes: updatedTastingNotes,
-          arabicaPercentage: updatedArabica // ⬅️ NEU
-        };
-        if (newImageUrl !== undefined) {
-          masterPayload.imageUrl = newImageUrl;
-        }
-        await updateBeanMasterData(item.beans.id, masterPayload);
-      }
-  
   // --- BILD DIREKT LÖSCHEN BUTTON ---
   if (deleteImageBtn) {
     deleteImageBtn.addEventListener('click', async () => {
@@ -528,7 +511,6 @@ const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').v
       const configId = document.getElementById('edit-config-id').value;
       const item = userBeansData.find(b => b.id === configId);
 
-      // Falls ein neues Bild ausgewählt wurde: In Storage hochladen
       let newImageUrl = undefined;
       if (modalProcessedImageFile) {
         try {
@@ -538,12 +520,12 @@ const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').v
         }
       }
 
-      // Tasting Notes verarbeiten...
       const customNotesInput = document.getElementById('edit-custom-notes') ? document.getElementById('edit-custom-notes').value : '';
       const customNotesArray = customNotesInput
         ? customNotesInput.split(',').map(n => n.trim()).filter(n => n.length > 0)
         : [];
       const updatedTastingNotes = [...new Set([...modalSelectedTastingNotes, ...customNotesArray])];
+      const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').value, 10);
 
       const updatedData = {
         status: document.getElementById('edit-status').value,
@@ -558,9 +540,11 @@ const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').v
 
       const result = await updateUserBeanConfig(configId, updatedData);
 
-      // Stammdaten (Tasting Notes & Neues Bild) in 'beans' aktualisieren
       if (result.success && item && item.beans) {
-        const masterPayload = { tastingNotes: updatedTastingNotes };
+        const masterPayload = { 
+          tastingNotes: updatedTastingNotes,
+          arabicaPercentage: updatedArabica
+        };
         if (newImageUrl !== undefined) {
           masterPayload.imageUrl = newImageUrl;
         }
@@ -595,9 +579,6 @@ const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').v
 }
 
 /**
- * Öffnet das Modal und befüllt alle Felder inkl. Tasting Notes
- */
-/**
  * Öffnet das Modal und befüllt alle Felder inkl. Bild-Vorschau
  */
 function openDetailModal(configId) {
@@ -615,15 +596,7 @@ function openDetailModal(configId) {
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
 
-// Mischungsverhältnis im Modal setzen
-  const arabicaVal = bean.arabica_percentage !== undefined && bean.arabica_percentage !== null ? bean.arabica_percentage : 100;
-  const editSlider = document.getElementById('edit-arabica-slider');
-  const editDisplay = document.getElementById('edit-blend-display');
-  
-  if (editSlider) editSlider.value = arabicaVal;
-  if (editDisplay) editDisplay.textContent = formatBlendText(arabicaVal);
-  
-  // --- BILD-VORSCHAU UND LÖSCHEN-BUTTON IM MODAL STEUREN ---
+  // --- BILD-VORSCHAU UND HEADER-BILD STEURN ---
   const previewBox = document.getElementById('modal-image-preview-box');
   const currentPreviewImg = document.getElementById('modal-image-current-preview');
   const headerImgContainer = document.getElementById('modal-image-container');
@@ -639,10 +612,66 @@ function openDetailModal(configId) {
     if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // (Rest der Modal-Befüllung für Status, Score, Tasting Notes, DF64 Parameter)...
+  // --- STATUS & SCORE BEFÜLLEN ---
+  document.getElementById('edit-status').value = item.status || 'inventory';
+  document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
+
+  // --- MISCHUNGSVERHÄLTNIS SLIDER IM MODAL SETZEN ---
+  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
+  const editSlider = document.getElementById('edit-arabica-slider');
+  const editDisplay = document.getElementById('edit-blend-display');
   
+  if (editSlider) editSlider.value = arabicaVal;
+  if (editDisplay) editDisplay.textContent = formatBlendText(arabicaVal);
+
+  // --- TASTING NOTES BEFÜLLEN & UI-STATUS SETZEN ---
+  const existingNotes = bean.tasting_notes || [];
+  modalSelectedTastingNotes = [];
+  const presetTags = ['Schokolade', 'Nuss', 'Beere', 'Zitrus', 'Steinobst', 'Blumig', 'Karamell'];
+  const customNotes = [];
+
+  const tagButtons = document.querySelectorAll('#modal-tasting-tags-preset .modal-tag-btn');
+  tagButtons.forEach(btn => {
+    const tagValue = btn.getAttribute('data-tag');
+    if (existingNotes.includes(tagValue)) {
+      modalSelectedTastingNotes.push(tagValue);
+      btn.classList.remove('bg-white', 'text-slate-600', 'border-lab-border');
+      btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+    } else {
+      btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+      btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
+    }
+  });
+
+  existingNotes.forEach(note => {
+    if (!presetTags.includes(note)) customNotes.push(note);
+  });
+
+  const customNotesEl = document.getElementById('edit-custom-notes');
+  if (customNotesEl) customNotesEl.value = customNotes.join(', ');
+
+  // --- DF64 PARAMETER BEFÜLLEN ---
+  document.getElementById('edit-single-grind').value = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '';
+  document.getElementById('edit-single-yield').value = item.single_yield_out ? formatNumberDisplay(item.single_yield_out, 1) : '';
+  document.getElementById('edit-single-time').value = item.single_time_sec ? formatNumberDisplay(item.single_time_sec, 0) : '';
+
+  document.getElementById('edit-double-grind').value = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '';
+  document.getElementById('edit-double-yield').value = item.double_yield_out ? formatNumberDisplay(item.double_yield_out, 1) : '';
+  document.getElementById('edit-double-time').value = item.double_time_sec ? formatNumberDisplay(item.double_time_sec, 0) : '';
+
   modal.classList.remove('hidden');
 }
+
+/**
+ * Verschiebt Bohne von der Wunschliste in den Bestand
+ */
+async function moveToInventory(configId) {
+  const result = await updateUserBeanConfig(configId, { status: 'inventory' });
+  if (result.success) {
+    loadAndRenderBeans();
+  }
+}
+
 /**
  * Toggle Pin-Status
  */
@@ -745,20 +774,14 @@ function initModalTastingNotesHandler() {
 
 /**
  * Wandelt einen Prozentwert für Arabica in lesbaren Text um.
- * Fängt ungültige Werte oder null ab und setzt standardmäßig 100% Arabica.
- *
- * @param {number|string|null} arabicaVal - Der Prozentwert für Arabica (0 bis 100)
- * @returns {string} Formatierter Text (z.B. "100% Arabica" oder "80% Arabica / 20% Robusta")
  */
 function formatBlendText(arabicaVal) {
   let arabica = parseInt(arabicaVal, 10);
   
-  // Falls die Umwandlung fehlschlägt (NaN) oder der Wert ungültig ist, Fallback auf 100%
   if (isNaN(arabica)) {
     arabica = 100;
   }
 
-  // Grenzen zwischen 0 und 100 sicherstellen
   arabica = Math.max(0, Math.min(100, arabica));
   const robusta = 100 - arabica;
 
