@@ -163,7 +163,21 @@
               <option value="Dark">Dark</option>
             </select>
           </div>
-
+          
+<!-- MISCHUNGSVERHÄLTNIS SLIDER (NEUE BOHNE) -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-mono text-slate-500 uppercase">Mischungsverhältnis</label>
+              <span id="bean-blend-display" class="text-xs font-mono font-bold text-slate-900">100% Arabica</span>
+            </div>
+            <input type="range" id="bean-arabica-slider" min="0" max="100" value="100" step="5"
+                   class="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer">
+            <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-0.5">
+              <span>0% Arabica (100% Robusta)</span>
+              <span>100% Arabica</span>
+            </div>
+          </div>
+          
           <!-- TASTING NOTES TAG-SYSTEM -->
           <div>
             <label class="block text-xs font-mono text-slate-500 uppercase mb-1">Tasting Notes (Geschmacksnoten)</label>
@@ -358,6 +372,16 @@
               </label>
             </div>
           </div>
+        </div>
+
+<!-- MISCHUNGSVERHÄLTNIS SLIDER (EDIT MODAL) -->
+        <div class="pt-2 border-t border-lab-border">
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-[10px] font-mono text-slate-500 uppercase">Mischungsverhältnis Bearbeiten</label>
+            <span id="edit-blend-display" class="text-xs font-mono font-bold text-slate-900">100% Arabica</span>
+          </div>
+          <input type="range" id="edit-arabica-slider" min="0" max="100" value="100" step="5"
+                 class="w-full accent-slate-900 bg-slate-200 h-2 rounded-lg cursor-pointer">
         </div>
         
         <!-- NEU: TASTING NOTES IN-PLACE EDITING -->
