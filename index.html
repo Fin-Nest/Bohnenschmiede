@@ -381,6 +381,13 @@
           <div class="bg-white p-2 rounded-xl border border-lab-border shadow-sm">
             <canvas id="grind-chart" class="w-full h-48"></canvas>
           </div>
+          <!-- HISTORIE & MANAGEMENT DER PACKUNGEN UND BEZÜGE -->
+          <div id="packs-and-logs-management" class="space-y-3 pt-2">
+            <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">Erfasste Packungen & Bezüge</span>
+            <div id="packs-history-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+              <!-- Dynamische Liste wird per JS gerendert -->
+            </div>
+          </div>
 
           <!-- Button zum Loggen eines neuen Shots -->
           <button id="btn-open-shot-logger" type="button" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
@@ -575,5 +582,63 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/supabase.js"></script>
   <script src="assets/js/app.js"></script>
+
+  <!-- MODAL: BEZUG BEARBEITEN -->
+  <div id="edit-shot-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="frosted-glass bg-white/95 max-w-sm w-full rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b border-lab-border pb-3">
+        <h3 class="text-sm font-bold text-slate-900 font-mono">✏️ Bezug korrigieren</h3>
+        <button id="edit-shot-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <form id="edit-shot-form" class="space-y-3">
+        <input type="hidden" id="edit-shot-id">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Mahlgrad *</label>
+            <input type="text" id="edit-shot-grind" required class="w-full bg-white border border-lab-border rounded p-2 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Zeit (s) *</label>
+            <input type="number" id="edit-shot-time" required class="w-full bg-white border border-lab-border rounded p-2 text-xs font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Notiz</label>
+          <input type="text" id="edit-shot-notes" class="w-full bg-white border border-lab-border rounded p-2 text-xs font-mono">
+        </div>
+
+        <button type="submit" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
+          Korrektur Speichern
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PACKUNG BEARBEITEN -->
+  <div id="edit-pack-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="frosted-glass bg-white/95 max-w-sm w-full rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b border-lab-border pb-3">
+        <h3 class="text-sm font-bold text-slate-900 font-mono">✏️ Packung bearbeiten</h3>
+        <button id="edit-pack-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <form id="edit-pack-form" class="space-y-3">
+        <input type="hidden" id="edit-pack-id">
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Bezeichnung</label>
+          <input type="text" id="edit-pack-name" required class="w-full bg-white border border-lab-border rounded p-2 text-xs font-mono">
+        </div>
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Röstdatum *</label>
+          <input type="date" id="edit-pack-roast-date" required class="w-full bg-white border border-lab-border rounded p-2 text-xs font-mono">
+        </div>
+
+        <button type="submit" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition">
+          Packung Speichern
+        </button>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
