@@ -147,7 +147,7 @@ function initAddBeanForm() {
         roaster: document.getElementById('bean-roaster').value,
         roastLevel: document.getElementById('bean-roast').value,
         arabicaPercentage: parseInt(document.getElementById('bean-arabica-slider').value, 10),
-        websiteUrl: websiteUrlInput, // ⬅️ NEU
+        websiteUrl: websiteUrlInput,
         tastingNotes: allTastingNotes,
         imageFile: processedImageFile,
 
@@ -377,7 +377,7 @@ function renderInventoryBeans(inventoryList) {
         <!-- OBERER BEREICH: BILD LINKS, STAMMDATEN & BADGES RECHTS -->
         <div class="flex gap-3 items-start">
           
-          <!-- Bild links (max 1/3 der Höhe, fester Rahmen) -->
+          <!-- Bild links -->
           ${bean.image_url ? `
             <div onclick="openDetailModal('${item.id}')" 
                  class="w-16 h-20 flex-shrink-0 bg-slate-100/60 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border/60 cursor-pointer">
@@ -401,7 +401,7 @@ function renderInventoryBeans(inventoryList) {
               </button>
             </div>
 
-            <!-- Badges: Röstgrad, Mischungsverhältnis & Rating -->
+            <!-- Badges -->
             <div class="flex flex-wrap gap-1 mt-1.5">
               <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
                 ${escapeHtml(bean.roast_level || 'Medium')}
@@ -429,7 +429,7 @@ function renderInventoryBeans(inventoryList) {
           </div>
         </div>
 
-        <!-- UNTERER BEREICH: DF64 DIAL-IN PARAMETER (2-SPALTEN GRID) -->
+        <!-- UNTERER BEREICH: DF64 DIAL-IN PARAMETER -->
         <div onclick="openDetailModal('${item.id}')" class="bg-white/60 p-2 rounded border border-lab-border/60 text-xs font-mono grid grid-cols-2 gap-2 cursor-pointer pt-2 border-t border-lab-border/40">
           <div>
             <span class="text-[9px] font-mono text-slate-400 block uppercase">Single (8g)</span>
@@ -624,6 +624,67 @@ function initModalEvents() {
     });
   }
 
+  // Submit: Bezug bearbeiten
+  const editShotForm = document.getElementById('edit-shot-form');
+  const editShotModal = document.getElementById('edit-shot-modal');
+  const editShotCloseBtn = document.getElementById('edit-shot-close-btn');
+
+  if (editShotCloseBtn && editShotModal) {
+    editShotCloseBtn.addEventListener('click', () => editShotModal.classList.add('hidden'));
+  }
+
+  if (editShotForm) {
+    editShotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const logId = document.getElementById('edit-shot-id').value;
+      const configId = document.getElementById('edit-config-id').value;
+
+      const updatedData = {
+        grindSize: document.getElementById('edit-shot-grind').value,
+        timeSec: document.getElementById('edit-shot-time').value,
+        notes: document.getElementById('edit-shot-notes').value
+      };
+
+      const res = await updateShotLogInDatabase(logId, updatedData);
+      if (res.success) {
+        editShotModal.classList.add('hidden');
+        openDetailModal(configId);
+      } else {
+        alert('Fehler beim Aktualisieren: ' + res.error);
+      }
+    });
+  }
+
+  // Submit: Packung bearbeiten
+  const editPackForm = document.getElementById('edit-pack-form');
+  const editPackModal = document.getElementById('edit-pack-modal');
+  const editPackCloseBtn = document.getElementById('edit-pack-close-btn');
+
+  if (editPackCloseBtn && editPackModal) {
+    editPackCloseBtn.addEventListener('click', () => editPackModal.classList.add('hidden'));
+  }
+
+  if (editPackForm) {
+    editPackForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const packId = document.getElementById('edit-pack-id').value;
+      const configId = document.getElementById('edit-config-id').value;
+
+      const updatedData = {
+        packName: document.getElementById('edit-pack-name').value,
+        roastDate: document.getElementById('edit-pack-roast-date').value
+      };
+
+      const res = await updateBeanPackInDatabase(packId, updatedData);
+      if (res.success) {
+        editPackModal.classList.add('hidden');
+        openDetailModal(configId);
+      } else {
+        alert('Fehler beim Aktualisieren: ' + res.error);
+      }
+    });
+  }
+
   // Foto löschen
   if (deleteImageBtn) {
     deleteImageBtn.addEventListener('click', async () => {
@@ -720,9 +781,7 @@ function initModalEvents() {
     });
   }
 }
-/**
- * Öffnet das Modal und befüllt alle Felder
- */
+
 /**
  * Öffnet das Modal im Read-Only Ansichtsmodus und befüllt alle Felder
  */
@@ -733,7 +792,7 @@ function openDetailModal(configId) {
   const bean = item.beans || {};
   const modal = document.getElementById('detail-modal');
 
-  // 1. Standardmäßig immer im Ansichtsmodus (Read-Only) starten
+  // Standardmäßig im Ansichtsmodus (Read-Only) starten
   const viewModeEl = document.getElementById('modal-view-mode');
   const editForm = document.getElementById('edit-bean-form');
   const btnEnableEdit = document.getElementById('btn-enable-edit');
@@ -742,7 +801,6 @@ function openDetailModal(configId) {
   if (editForm) editForm.classList.add('hidden');
   if (btnEnableEdit) btnEnableEdit.classList.remove('hidden');
 
-  // Inputs im Edit-Formular zurücksetzen
   modalProcessedImageFile = null;
   const modalFileInput = document.getElementById('modal-bean-image-input');
   if (modalFileInput) modalFileInput.value = '';
@@ -781,7 +839,7 @@ function openDetailModal(configId) {
     if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // --- READ-ONLY ANSICHT BEFÜLLEN (#modal-view-mode) ---
+  // --- READ-ONLY ANSICHT BEFÜLLEN ---
   const viewStatus = document.getElementById('view-status-badge');
   if (viewStatus) viewStatus.textContent = item.status === 'wishlist' ? '📋 Wunschliste' : '📦 Im Bestand';
 
@@ -800,7 +858,7 @@ function openDetailModal(configId) {
     viewScore.classList.add('hidden');
   }
 
-  // Tasting Notes Read-Only Liste
+  // Tasting Notes
   const viewNotesList = document.getElementById('view-tasting-notes-list');
   if (viewNotesList) {
     if (bean.tasting_notes && bean.tasting_notes.length > 0) {
@@ -815,14 +873,14 @@ function openDetailModal(configId) {
     }
   }
 
-  // Extraktions-Parameter Read-Only
+  // Extraktions-Parameter
   document.getElementById('view-single-grind').textContent = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '-';
   document.getElementById('view-single-details').textContent = `${formatNumberDisplay(item.single_yield_out)}g | ${formatNumberDisplay(item.single_time_sec, 0)}s`;
 
   document.getElementById('view-double-grind').textContent = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '-';
   document.getElementById('view-double-details').textContent = `${formatNumberDisplay(item.double_yield_out)}g | ${formatNumberDisplay(item.double_time_sec, 0)}s`;
 
-  // --- FORMULAR-FELDER BEFÜLLEN FOR EDIT MODE ---
+  // --- EDIT-MODE FORMULAR-FELDER ---
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
@@ -864,23 +922,139 @@ function openDetailModal(configId) {
   document.getElementById('edit-double-yield').value = item.double_yield_out ? formatNumberDisplay(item.double_yield_out, 1) : '';
   document.getElementById('edit-double-time').value = item.double_time_sec ? formatNumberDisplay(item.double_time_sec, 0) : '';
 
-  modal.classList.remove('hidden');
-
-  // Innerhalb von openDetailModal(configId) am Ende einfügen:
+  // Diagramm & Historie laden
   if (item && item.beans) {
     fetchPacksAndLogsForBean(item.beans.id).then(res => {
       if (res.success && res.data) {
-        // Diagramm rendern
         renderGrindChart('grind-chart', res.data);
-
-        // Historische Empfehlung berechnen & anzeigen
         const recText = calculateHistoricalRecommendation(res.data);
         const recBox = document.getElementById('historical-recommendation-text');
         if (recBox) recBox.textContent = recText;
+
+        renderPacksAndLogsHistory(res.data, configId);
       }
     });
   }
+
+  modal.classList.remove('hidden');
 }
+
+/**
+ * Rendert die Verwaltungsliste aller Packungen und Bezüge einer Bohne
+ */
+function renderPacksAndLogsHistory(packsData, configId) {
+  const container = document.getElementById('packs-history-list');
+  if (!container) return;
+
+  if (!packsData || packsData.length === 0) {
+    container.innerHTML = `
+      <div class="text-xs font-mono text-slate-400 p-2 bg-slate-50 rounded border border-lab-border text-center">
+        Noch keine Packungen angelegt.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = packsData.map(pack => {
+    const logs = (pack.shot_logs || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    return `
+      <div class="bg-slate-50/90 p-2.5 rounded-lg border border-lab-border space-y-2 text-xs font-mono">
+        
+        <!-- PACKUNG HEADER -->
+        <div class="flex justify-between items-center bg-white p-1.5 rounded border border-lab-border/80">
+          <div class="min-w-0 flex-1">
+            <span class="font-bold text-slate-900 block truncate">${escapeHtml(pack.pack_name)}</span>
+            <span class="text-[10px] text-slate-500">Röstung: ${pack.roast_date} ${pack.is_active ? ' (Aktiv)' : ''}</span>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button onclick="openEditPackModal('${pack.id}', '${escapeHtml(pack.pack_name)}', '${pack.roast_date}')" 
+                    title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">✏️</button>
+            <button onclick="handleDeletePack('${pack.id}', '${configId}')" 
+                    title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">🗑️</button>
+          </div>
+        </div>
+
+        <!-- BEZÜGE EINER PACKUNG -->
+        ${logs.length > 0 ? `
+          <div class="pl-2 space-y-1 border-l-2 border-slate-300">
+            ${logs.map(log => {
+              const days = calculateDaysSinceRoast(pack.roast_date, log.created_at);
+              return `
+                <div class="flex justify-between items-center bg-white/60 p-1.5 rounded text-[11px]">
+                  <div class="min-w-0 flex-1">
+                    <span class="font-bold text-slate-800">Tag ${days}:</span> 
+                    <span>${formatNumberDisplay(log.grind_size, 1)} DF64</span> | 
+                    <span>${log.time_sec}s</span>
+                    ${log.notes ? `<span class="text-slate-400 block truncate text-[10px]">${escapeHtml(log.notes)}</span>` : ''}
+                  </div>
+                  <div class="flex items-center gap-1 flex-shrink-0">
+                    <button onclick="openEditShotModal('${log.id}', '${log.grind_size}', '${log.time_sec}', '${escapeHtml(log.notes || '')}')" 
+                            title="Bezug korrigieren" class="p-1 hover:bg-slate-100 rounded text-slate-600">✏️</button>
+                    <button onclick="handleDeleteShot('${log.id}', '${configId}')" 
+                            title="Bezug löschen" class="p-1 hover:bg-red-50 rounded text-red-600">🗑️</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : `
+          <div class="text-[10px] text-slate-400 pl-2">Keine Bezüge für diese Packung geloggt.</div>
+        `}
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Öffnet das Modal zum Bearbeiten eines Bezugs
+ */
+function openEditShotModal(logId, grind, time, notes) {
+  document.getElementById('edit-shot-id').value = logId;
+  document.getElementById('edit-shot-grind').value = grind;
+  document.getElementById('edit-shot-time').value = time;
+  document.getElementById('edit-shot-notes').value = notes;
+  document.getElementById('edit-shot-modal').classList.remove('hidden');
+}
+
+/**
+ * Öffnet das Modal zum Bearbeiten einer Packung
+ */
+function openEditPackModal(packId, name, roastDate) {
+  document.getElementById('edit-pack-id').value = packId;
+  document.getElementById('edit-pack-name').value = name;
+  document.getElementById('edit-pack-roast-date').value = roastDate;
+  document.getElementById('edit-pack-modal').classList.remove('hidden');
+}
+
+/**
+ * Löscht einen Bezug nach Bestätigung
+ */
+async function handleDeleteShot(logId, configId) {
+  if (confirm('Möchtest du diesen Bezug wirklich löschen?')) {
+    const res = await deleteShotLogFromDatabase(logId);
+    if (res.success) {
+      openDetailModal(configId);
+    } else {
+      alert('Fehler beim Löschen: ' + res.error);
+    }
+  }
+}
+
+/**
+ * Löscht eine Packung samt aller zugehörigen Bezüge nach Bestätigung
+ */
+async function handleDeletePack(packId, configId) {
+  if (confirm('Möchtest du diese Packung und ALLE darin enthaltenen Bezüge wirklich löschen?')) {
+    const res = await deleteBeanPackFromDatabase(packId);
+    if (res.success) {
+      openDetailModal(configId);
+    } else {
+      alert('Fehler beim Löschen der Packung: ' + res.error);
+    }
+  }
+}
+
 /**
  * Verschiebt Bohne von der Wunschliste in den Bestand
  */
@@ -917,7 +1091,7 @@ function escapeHtml(str) {
 }
 
 /**
- * Initialisiert die Funktionen im Setup-Tab (z.B. CSV-Export)
+ * Initialisiert die Funktionen im Setup-Tab
  */
 function initSetupTab() {
   const exportBtn = document.getElementById('btn-export-csv');
@@ -929,7 +1103,7 @@ function initSetupTab() {
 }
 
 /**
- * Registriert den Service Worker für PWA- und Offline-Funktionalität
+ * Registriert den Service Worker
  */
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -946,7 +1120,7 @@ function registerServiceWorker() {
 }
 
 /**
- * Steuert das An- und Abwählen der Tasting-Notes-Buttons
+ * Tag-Buttons (Neue Bohne)
  */
 function initTastingNotesHandler() {
   const tagButtons = document.querySelectorAll('#tasting-tags-preset .tag-btn');
@@ -969,7 +1143,7 @@ function initTastingNotesHandler() {
 }
 
 /**
- * Steuert das An- und Abwählen der Tasting-Notes im Edit-Modal
+ * Tag-Buttons (Edit Modal)
  */
 function initModalTastingNotesHandler() {
   const tagButtons = document.querySelectorAll('#modal-tasting-tags-preset .modal-tag-btn');
@@ -992,7 +1166,7 @@ function initModalTastingNotesHandler() {
 }
 
 /**
- * Wandelt einen Prozentwert für Arabica in lesbaren Text um.
+ * Wandelt Arabica-% in lesbaren Text um
  */
 function formatBlendText(arabicaVal) {
   let arabica = parseInt(arabicaVal, 10);
@@ -1010,7 +1184,7 @@ function formatBlendText(arabicaVal) {
 }
 
 /**
- * Steuert die Live-Textanzeige bei Bewegung der Schieberegler
+ * Slider-Anzeige
  */
 function initBlendSliderHandler() {
   const addSlider = document.getElementById('bean-arabica-slider');
