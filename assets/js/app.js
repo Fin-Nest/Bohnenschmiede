@@ -835,6 +835,9 @@ function openDetailModal(configId) {
   const bean = item.beans || {};
   const modal = document.getElementById('detail-modal');
 
+  // Arabica-Wert direkt zu Beginn definieren
+  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
+
   // Standardmäßig im Ansichtsmodus (Read-Only) starten
   const viewModeEl = document.getElementById('modal-view-mode');
   const editForm = document.getElementById('edit-bean-form');
@@ -893,8 +896,7 @@ function openDetailModal(configId) {
     viewRoast.className = `text-xs font-mono px-2 py-1 rounded border ${getRoastBadgeClass(bean.roast_level)}`;
   }
 
-  // Arabica-Prozentwert sauber definieren
-  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
+  // Blend Text
   const viewBlend = document.getElementById('view-blend-badge');
   if (viewBlend) viewBlend.textContent = formatBlendText(arabicaVal);
 
