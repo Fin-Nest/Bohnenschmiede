@@ -422,18 +422,48 @@ async function updateBeanPackInDatabase(packId, updatedData) {
 }
 
 /**
- * Importiert Bohnen und Konfigurationen aus einer CSV-Datei (unterstützt ';' und ',' Trennzeichen)
+ * Zerlegt eine CSV-Zeile präzise unter Berücksichtigung von Anführungszeichen
+ */
+function parseCSVLine(text, delimiter) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === delimiter && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+/**
+ * Importiert Bohnen und Konfigurationen aus einer CSV-Datei mit flexibler Feldsuche
  */
 async function importBeansFromCSV(csvText) {
   try {
-    const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    // 1. UTF-8 BOM Marker entfernen
+    const cleanText = csvText.replace(/^\uFEFF/, '');
+    const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length < 2) throw new Error('Die CSV-Datei ist leer oder enthält keine Datenzeilen.');
 
-    // Automatische Erkennung des Trennzeichens (; oder ,)
+    // 2. Trennzeichen ermitteln (; oder ,)
     const delimiter = lines[0].includes(';') ? ';' : ',';
 
-    // Header-Zeile auflösen
-    const headers = lines[0].split(delimiter).map(h => h.replace(/^"|"$/g, '').trim());
+    // 3. Header-Zeile säubern und in Kleinschreibung umwandeln
+    const headers = parseCSVLine(lines[0], delimiter).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
 
     let importedCount = 0;
     const errors = [];
@@ -442,33 +472,35 @@ async function importBeansFromCSV(csvText) {
       const line = lines[i];
       if (!line) continue;
 
-      const values = line.split(delimiter).map(v => v.replace(/^"|"$/g, '').trim());
+      const values = parseCSVLine(line, delimiter).map(v => v.replace(/^"|"$/g, '').trim());
       const row = {};
 
       headers.forEach((header, idx) => {
         row[header] = values[idx] || '';
       });
 
-      const beanName = row['Bohnen Name'] || row['Name'];
-      const roaster = row['Röster'] || row['Roaster'];
+      // Flexible Zuordnung von Spaltennamen
+      const beanName = row['bohnen name'] || row['name'] || row['bohnenname'];
+      const roaster = row['röster'] || row['roaster'] || row['roester'];
 
       if (!beanName || !roaster) {
-        console.warn(`Zeile ${i + 1} übersprungen: Name oder Röster fehlt.`, row);
+        console.warn(`Zeile ${i + 1} übersprungen: Name oder Röster nicht gefunden.`, row);
         continue;
       }
 
-      const tastingNotesArr = row['Tasting Notes'] 
-        ? row['Tasting Notes'].split(';').map(n => n.trim()).filter(n => n.length > 0)
+      const tastingNotesRaw = row['tasting notes'] || row['tastingnotes'] || row['geschmacksnoten'] || '';
+      const tastingNotesArr = tastingNotesRaw 
+        ? tastingNotesRaw.split(/[,;]/).map(n => n.trim()).filter(n => n.length > 0)
         : [];
 
       // 1. Bohne in 'beans' speichern
       const beanPayload = {
         name: beanName,
         roaster: roaster,
-        roast_level: row['Röstgrad'] || 'Medium',
-        arabica_percentage: parseInt(row['Arabica %'], 10) || 100,
+        roast_level: row['röstgrad'] || row['roast level'] || 'Medium',
+        arabica_percentage: parseInt(row['arabica %'] || row['arabica'] || '100', 10) || 100,
         tasting_notes: tastingNotesArr,
-        website_url: row['Website'] || null
+        website_url: row['website'] || row['link'] || null
       };
 
       const { data: beanData, error: beanErr } = await supabaseClient
@@ -484,16 +516,19 @@ async function importBeansFromCSV(csvText) {
       }
 
       // 2. User Bean Config speichern
+      const statusVal = (row['status'] || '').toLowerCase();
+      const isWishlist = statusVal.includes('wunsch') || statusVal === 'wishlist';
+
       const configPayload = {
         bean_id: beanData.id,
-        status: (row['Status'] || '').toLowerCase().includes('wunsch') ? 'wishlist' : 'inventory',
-        personal_score: row['Score'] ? parseFlexibleNumber(row['Score']) : null,
-        single_grind_size: row['Single Mahlgrad'] ? parseFlexibleNumber(row['Single Mahlgrad']) : null,
-        single_yield_out: row['Single Yield (g)'] ? parseFlexibleNumber(row['Single Yield (g)']) : null,
-        single_time_sec: row['Single Zeit (s)'] ? parseInt(row['Single Zeit (s)'], 10) : null,
-        double_grind_size: row['Double Mahlgrad'] ? parseFlexibleNumber(row['Double Mahlgrad']) : null,
-        double_yield_out: row['Double Yield (g)'] ? parseFlexibleNumber(row['Double Yield (g)']) : null,
-        double_time_sec: row['Double Zeit (s)'] ? parseInt(row['Double Zeit (s)'], 10) : null
+        status: isWishlist ? 'wishlist' : 'inventory',
+        personal_score: (row['score'] || row['bewertung']) ? parseFlexibleNumber(row['score'] || row['bewertung']) : null,
+        single_grind_size: row['single mahlgrad'] ? parseFlexibleNumber(row['single mahlgrad']) : null,
+        single_yield_out: (row['single yield (g)'] || row['single yield']) ? parseFlexibleNumber(row['single yield (g)'] || row['single yield']) : null,
+        single_time_sec: (row['single zeit (s)'] || row['single zeit']) ? parseInt(row['single zeit (s)'] || row['single zeit'], 10) : null,
+        double_grind_size: row['double mahlgrad'] ? parseFlexibleNumber(row['double mahlgrad']) : null,
+        double_yield_out: (row['double yield (g)'] || row['double yield']) ? parseFlexibleNumber(row['double yield (g)'] || row['double yield']) : null,
+        double_time_sec: (row['double zeit (s)'] || row['double zeit']) ? parseInt(row['double zeit (s)'] || row['double zeit'], 10) : null
       };
 
       const { error: configErr } = await supabaseClient
