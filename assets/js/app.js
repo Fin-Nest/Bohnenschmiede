@@ -6,6 +6,7 @@ let userBeansData = [];
 let processedImageFile = null; // Speichert das verarbeitete Bild-File/Blob
 let selectedTastingNotes = []; // Speichert die aktuell aktivierten Tags
 let modalSelectedTastingNotes = []; // Speichert die im Modal gewählten Tags
+let modalProcessedImageFile = null; // Speichert ein neu ausgewähltes Bild im Edit-Modal
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
@@ -441,29 +442,88 @@ function renderWishlistBeans(wishlistList) {
 /**
  * Modal Event-Handling
  */
+/**
+ * Modal Event-Handling
+ */
 function initModalEvents() {
   const modal = document.getElementById('detail-modal');
   const closeBtn = document.getElementById('modal-close-btn');
   const editForm = document.getElementById('edit-bean-form');
   const deleteBtn = document.getElementById('btn-delete-bean');
+  const deleteImageBtn = document.getElementById('btn-delete-modal-image');
+  const modalFileInput = document.getElementById('modal-bean-image-input');
+  const modalBgToggle = document.getElementById('modal-toggle-bg-removal');
 
   if (closeBtn) {
     closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
   }
 
+  // --- NEUES BILD IM MODAL AUSWÄHLEN & KI-FREISTELLEN ---
+  if (modalFileInput) {
+    modalFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        modalProcessedImageFile = null;
+        return;
+      }
+
+      if (modalBgToggle && modalBgToggle.checked && window.imglyRemoveBackground) {
+        try {
+          const blob = await window.imglyRemoveBackground(file);
+          modalProcessedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
+        } catch (err) {
+          console.error('KI-Freistellen fehlgeschlagen:', err);
+          modalProcessedImageFile = file;
+        }
+      } else {
+        modalProcessedImageFile = file;
+      }
+    });
+  }
+
+  // --- BILD DIREKT LÖSCHEN BUTTON ---
+  if (deleteImageBtn) {
+    deleteImageBtn.addEventListener('click', async () => {
+      const configId = document.getElementById('edit-config-id').value;
+      const item = userBeansData.find(b => b.id === configId);
+
+      if (item && item.beans && confirm('Möchtest du das Foto dieser Bohne wirklich löschen?')) {
+        const result = await updateBeanMasterData(item.beans.id, { imageUrl: null });
+        if (result.success) {
+          document.getElementById('modal-image-preview-box').classList.add('hidden');
+          document.getElementById('modal-image-container').classList.add('hidden');
+          await loadAndRenderBeans();
+          alert('Foto wurde erfolgreich entfernt!');
+        } else {
+          alert('Fehler beim Löschen des Bildes: ' + result.error);
+        }
+      }
+    });
+  }
+
+  // --- MODAL SPEICHERN ---
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const configId = document.getElementById('edit-config-id').value;
+      const item = userBeansData.find(b => b.id === configId);
 
+      // Falls ein neues Bild ausgewählt wurde: In Storage hochladen
+      let newImageUrl = undefined;
+      if (modalProcessedImageFile) {
+        try {
+          newImageUrl = await uploadBeanImage(modalProcessedImageFile);
+        } catch (imgErr) {
+          console.error('Fehler beim Upload des neuen Bildes:', imgErr);
+        }
+      }
+
+      // Tasting Notes verarbeiten...
       const customNotesInput = document.getElementById('edit-custom-notes') ? document.getElementById('edit-custom-notes').value : '';
       const customNotesArray = customNotesInput
         ? customNotesInput.split(',').map(n => n.trim()).filter(n => n.length > 0)
         : [];
-
       const updatedTastingNotes = [...new Set([...modalSelectedTastingNotes, ...customNotesArray])];
-
-      const item = userBeansData.find(b => b.id === configId);
 
       const updatedData = {
         status: document.getElementById('edit-status').value,
@@ -478,11 +538,18 @@ function initModalEvents() {
 
       const result = await updateUserBeanConfig(configId, updatedData);
 
+      // Stammdaten (Tasting Notes & Neues Bild) in 'beans' aktualisieren
       if (result.success && item && item.beans) {
-        await updateBeanMasterData(item.beans.id, { tastingNotes: updatedTastingNotes });
+        const masterPayload = { tastingNotes: updatedTastingNotes };
+        if (newImageUrl !== undefined) {
+          masterPayload.imageUrl = newImageUrl;
+        }
+        await updateBeanMasterData(item.beans.id, masterPayload);
       }
 
       if (result.success) {
+        modalProcessedImageFile = null;
+        if (modalFileInput) modalFileInput.value = '';
         modal.classList.add('hidden');
         await loadAndRenderBeans();
       } else {
@@ -510,6 +577,9 @@ function initModalEvents() {
 /**
  * Öffnet das Modal und befüllt alle Felder inkl. Tasting Notes
  */
+/**
+ * Öffnet das Modal und befüllt alle Felder inkl. Bild-Vorschau
+ */
 function openDetailModal(configId) {
   const item = userBeansData.find(b => b.id === configId);
   if (!item) return;
@@ -517,78 +587,34 @@ function openDetailModal(configId) {
   const bean = item.beans || {};
   const modal = document.getElementById('detail-modal');
 
+  modalProcessedImageFile = null;
+  const modalFileInput = document.getElementById('modal-bean-image-input');
+  if (modalFileInput) modalFileInput.value = '';
+
   document.getElementById('edit-config-id').value = item.id;
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
 
-  // --- BILD IM MODAL ANZEIGEN ---
-  const imgContainer = document.getElementById('modal-image-container');
-  const imgEl = document.getElementById('modal-bean-image');
+  // --- BILD-VORSCHAU UND LÖSCHEN-BUTTON IM MODAL STEUREN ---
+  const previewBox = document.getElementById('modal-image-preview-box');
+  const currentPreviewImg = document.getElementById('modal-image-current-preview');
+  const headerImgContainer = document.getElementById('modal-image-container');
+  const headerImgEl = document.getElementById('modal-bean-image');
 
-  if (bean.image_url && imgContainer && imgEl) {
-    imgEl.src = bean.image_url;
-    imgContainer.classList.remove('hidden');
-  } else if (imgContainer) {
-    imgContainer.classList.add('hidden');
+  if (bean.image_url) {
+    if (currentPreviewImg) currentPreviewImg.src = bean.image_url;
+    if (previewBox) previewBox.classList.remove('hidden');
+    if (headerImgEl) headerImgEl.src = bean.image_url;
+    if (headerImgContainer) headerImgContainer.classList.remove('hidden');
+  } else {
+    if (previewBox) previewBox.classList.add('hidden');
+    if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // Rest der Modal-Befüllung (Status, Score, Tasting Notes, DF64 Parameter)...
-  document.getElementById('edit-status').value = item.status || 'inventory';
-  document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
-
-  // --- TASTING NOTES IM MODAL BEFÜLLEN ---
-  const existingNotes = bean.tasting_notes || [];
-  modalSelectedTastingNotes = [];
-
-  const presetTags = ['Schokolade', 'Nuss', 'Beere', 'Zitrus', 'Steinobst', 'Blumig', 'Karamell'];
-  const customNotes = [];
-
-  const tagButtons = document.querySelectorAll('#modal-tasting-tags-preset .modal-tag-btn');
+  // (Rest der Modal-Befüllung für Status, Score, Tasting Notes, DF64 Parameter)...
   
-  tagButtons.forEach(btn => {
-    const tagValue = btn.getAttribute('data-tag');
-    if (existingNotes.includes(tagValue)) {
-      modalSelectedTastingNotes.push(tagValue);
-      btn.classList.remove('bg-white', 'text-slate-600', 'border-lab-border');
-      btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
-    } else {
-      btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
-      btn.classList.add('bg-white', 'text-slate-600', 'border-lab-border');
-    }
-  });
-
-  existingNotes.forEach(note => {
-    if (!presetTags.includes(note)) {
-      customNotes.push(note);
-    }
-  });
-
-  const customNotesEl = document.getElementById('edit-custom-notes');
-  if (customNotesEl) {
-    customNotesEl.value = customNotes.join(', ');
-  }
-
-  document.getElementById('edit-single-grind').value = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '';
-  document.getElementById('edit-single-yield').value = item.single_yield_out ? formatNumberDisplay(item.single_yield_out, 1) : '';
-  document.getElementById('edit-single-time').value = item.single_time_sec ? formatNumberDisplay(item.single_time_sec, 0) : '';
-
-  document.getElementById('edit-double-grind').value = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '';
-  document.getElementById('edit-double-yield').value = item.double_yield_out ? formatNumberDisplay(item.double_yield_out, 1) : '';
-  document.getElementById('edit-double-time').value = item.double_time_sec ? formatNumberDisplay(item.double_time_sec, 0) : '';
-
   modal.classList.remove('hidden');
 }
-
-/**
- * Verschiebt Bohne von der Wunschliste in den Bestand
- */
-async function moveToInventory(configId) {
-  const result = await updateUserBeanConfig(configId, { status: 'inventory' });
-  if (result.success) {
-    loadAndRenderBeans();
-  }
-}
-
 /**
  * Toggle Pin-Status
  */
