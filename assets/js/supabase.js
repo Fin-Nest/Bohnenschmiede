@@ -222,7 +222,7 @@ async function deleteUserBeanConfig(configId) {
 }
 
 /**
- * Aktualisiert die Stammdaten einer Bohne
+ * Aktualisiert die Stammdaten (Tasting Notes, Image URL, Mischung, Link & Röstgrad) einer Bohne
  */
 async function updateBeanMasterData(beanId, masterData) {
   try {
@@ -240,6 +240,10 @@ async function updateBeanMasterData(beanId, masterData) {
     if (masterData.websiteUrl !== undefined) {
       updatePayload.website_url = masterData.websiteUrl || null;
     }
+    // ⬅️ NEU: Röstgrad in das Update-Payload aufnehmen
+    if (masterData.roastLevel !== undefined) {
+      updatePayload.roast_level = masterData.roastLevel;
+    }
 
     const { data, error } = await supabaseClient
       .from('beans')
@@ -254,7 +258,6 @@ async function updateBeanMasterData(beanId, masterData) {
     return { success: false, error: error.message };
   }
 }
-
 /**
  * Erstellt eine neue Packung für eine Bohne und setzt sie als aktiv
  */
