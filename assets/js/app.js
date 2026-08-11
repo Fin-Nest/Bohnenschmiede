@@ -255,7 +255,7 @@ function filterAndRenderBeans() {
 }
 
 /**
- * Rendert Hero-Kacheln (Angepinnt) inkl. Rating-Badge
+ * Rendert Hero-Kacheln (Angepinnt) mit dynamischen Score- & Röstgrad-Badges
  */
 function renderPinnedBeans(pinnedList) {
   const container = document.getElementById('pinned-beans-container');
@@ -299,22 +299,22 @@ function renderPinnedBeans(pinnedList) {
               </button>
             </div>
 
-            <!-- Badges: Röstgrad, Mischung & SCORE (RATING) -->
+            <!-- Dynamisch farbige Badges -->
             <div class="flex flex-wrap gap-1 mt-1">
-              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
-  ${escapeHtml(bean.roast_level || 'Medium')}
-</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
+                ${escapeHtml(bean.roast_level || 'Medium')}
+              </span>
               <span class="text-[10px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
                 ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
               </span>
               ${item.personal_score ? `
-  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getScoreBadgeClass(item.personal_score)}">
-    ⭐ ${formatNumberDisplay(item.personal_score, 1)}
-  </span>
-` : ''}
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded border ${getScoreBadgeClass(item.personal_score)}">
+                  ⭐ ${formatNumberDisplay(item.personal_score, 1)}
+                </span>
+              ` : ''}
             </div>
 
-            <!-- Tasting Notes Badges -->
+            <!-- Tasting Notes -->
             ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
               <div class="flex flex-wrap gap-1 mt-1.5">
                 ${bean.tasting_notes.map(note => `
@@ -354,7 +354,7 @@ function renderPinnedBeans(pinnedList) {
 }
 
 /**
- * Rendert Bestands-Kacheln im kompakten Horizontal-Layout (Bild links, Details rechts)
+ * Rendert Bestands-Kacheln mit dynamisch farbigen Badges
  */
 function renderInventoryBeans(inventoryList) {
   const container = document.getElementById('inventory-container');
@@ -374,10 +374,7 @@ function renderInventoryBeans(inventoryList) {
     return `
       <div class="frosted-glass p-3.5 rounded-xl border border-lab-border flex flex-col justify-between space-y-3">
         
-        <!-- OBERER BEREICH: BILD LINKS, STAMMDATEN & BADGES RECHTS -->
         <div class="flex gap-3 items-start">
-          
-          <!-- Bild links -->
           ${bean.image_url ? `
             <div onclick="openDetailModal('${item.id}')" 
                  class="w-16 h-20 flex-shrink-0 bg-slate-100/60 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border/60 cursor-pointer">
@@ -385,7 +382,6 @@ function renderInventoryBeans(inventoryList) {
             </div>
           ` : ''}
 
-          <!-- Text-Inhalte & Badges rechts -->
           <div class="flex-1 min-w-0">
             <div class="flex justify-between items-start gap-1">
               <div onclick="openDetailModal('${item.id}')" class="cursor-pointer min-w-0 flex-1">
@@ -393,7 +389,6 @@ function renderInventoryBeans(inventoryList) {
                 <h4 class="text-sm font-bold text-slate-900 leading-tight hover:underline truncate">${escapeHtml(bean.name)}</h4>
               </div>
               
-              <!-- Pin Button -->
               <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
                       title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
                       class="text-xs p-1 rounded hover:bg-slate-100 flex-shrink-0 ${item.is_pinned ? 'opacity-100' : 'opacity-30 hover:opacity-100'}">
@@ -401,22 +396,21 @@ function renderInventoryBeans(inventoryList) {
               </button>
             </div>
 
-            <!-- Badges -->
+            <!-- Dynamisch farbige Badges -->
             <div class="flex flex-wrap gap-1 mt-1.5">
-              <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 border border-lab-border">
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
                 ${escapeHtml(bean.roast_level || 'Medium')}
               </span>
               <span class="text-[9px] font-mono px-1.5 py-0.5 bg-amber-50 rounded text-amber-800 border border-amber-200">
                 ${formatBlendText((bean && bean.arabica_percentage !== null && bean.arabica_percentage !== undefined) ? bean.arabica_percentage : 100)}
               </span>
               ${item.personal_score ? `
-                <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-yellow-100 rounded text-yellow-900 border border-yellow-300">
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getScoreBadgeClass(item.personal_score)}">
                   ⭐ ${formatNumberDisplay(item.personal_score, 1)}
                 </span>
               ` : ''}
             </div>
 
-            <!-- Tasting Notes Badges -->
             ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
               <div class="flex flex-wrap gap-1 mt-1.5">
                 ${bean.tasting_notes.map(note => `
@@ -429,7 +423,6 @@ function renderInventoryBeans(inventoryList) {
           </div>
         </div>
 
-        <!-- UNTERER BEREICH: DF64 DIAL-IN PARAMETER -->
         <div onclick="openDetailModal('${item.id}')" class="bg-white/60 p-2 rounded border border-lab-border/60 text-xs font-mono grid grid-cols-2 gap-2 cursor-pointer pt-2 border-t border-lab-border/40">
           <div>
             <span class="text-[9px] font-mono text-slate-400 block uppercase">Single (8g)</span>
@@ -893,21 +886,21 @@ function openDetailModal(configId) {
   const viewStatus = document.getElementById('view-status-badge');
   if (viewStatus) viewStatus.textContent = item.status === 'wishlist' ? '📋 Wunschliste' : '📦 Im Bestand';
 
+  // Innerhalb von openDetailModal(configId):
   const viewRoast = document.getElementById('view-roast-badge');
-  if (viewRoast) viewRoast.textContent = bean.roast_level || 'Medium';
-
-  const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
-  const viewBlend = document.getElementById('view-blend-badge');
-  if (viewBlend) viewBlend.textContent = formatBlendText(arabicaVal);
+  if (viewRoast) {
+    viewRoast.textContent = bean.roast_level || 'Medium';
+    viewRoast.className = `text-xs font-mono px-2 py-1 rounded border ${getRoastBadgeClass(bean.roast_level)}`;
+  }
 
   const viewScore = document.getElementById('view-score-badge');
   if (item.personal_score) {
     viewScore.textContent = `⭐ ${formatNumberDisplay(item.personal_score, 1)}`;
+    viewScore.className = `text-xs font-mono px-2 py-1 rounded border ${getScoreBadgeClass(item.personal_score)}`;
     viewScore.classList.remove('hidden');
   } else {
     viewScore.classList.add('hidden');
   }
-
   // Tasting Notes
   const viewNotesList = document.getElementById('view-tasting-notes-list');
   if (viewNotesList) {
