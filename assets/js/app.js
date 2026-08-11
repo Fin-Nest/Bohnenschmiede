@@ -749,6 +749,7 @@ function initModalEvents() {
   }
 
   // Edit Formular speichern
+ // Edit Formular speichern
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -771,6 +772,9 @@ function initModalEvents() {
       const updatedTastingNotes = [...new Set([...modalSelectedTastingNotes, ...customNotesArray])];
       const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').value, 10);
       const updatedWebsiteUrl = document.getElementById('edit-website') ? document.getElementById('edit-website').value.trim() : '';
+      
+      // ⬅️ NEU: Röstgrad aus dem Formular auslesen
+      const updatedRoastLevel = document.getElementById('edit-roast') ? document.getElementById('edit-roast').value : 'Medium';
 
       const updatedData = {
         status: document.getElementById('edit-status').value,
@@ -789,7 +793,8 @@ function initModalEvents() {
         const masterPayload = { 
           tastingNotes: updatedTastingNotes,
           arabicaPercentage: updatedArabica,
-          websiteUrl: updatedWebsiteUrl
+          websiteUrl: updatedWebsiteUrl,
+          roastLevel: updatedRoastLevel // ⬅️ NEU: An Supabase übergeben
         };
         if (newImageUrl !== undefined) {
           masterPayload.imageUrl = newImageUrl;
@@ -807,7 +812,6 @@ function initModalEvents() {
       }
     });
   }
-
   // Bohne löschen
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
@@ -935,6 +939,12 @@ function openDetailModal(configId) {
   // --- EDIT-MODE FORMULAR-FELDER BEFÜLLEN ---
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
+
+  // ⬅️ NEU: Röstgrad-Auswahlfeld befüllen
+  const editRoastInput = document.getElementById('edit-roast');
+  if (editRoastInput) {
+    editRoastInput.value = bean.roast_level || 'Medium';
+  }
 
   const editSlider = document.getElementById('edit-arabica-slider');
   const editDisplay = document.getElementById('edit-blend-display');
