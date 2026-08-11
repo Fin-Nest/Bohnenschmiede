@@ -495,7 +495,7 @@ function renderWishlistBeans(wishlistList) {
 }
 
 /**
- * Modal Event-Handling
+ * Registriert alle Klick- & Formular-Events im Detail-Modal sowie den Unter-Modals
  */
 function initModalEvents() {
   const modal = document.getElementById('detail-modal');
@@ -504,12 +504,46 @@ function initModalEvents() {
   const deleteBtn = document.getElementById('btn-delete-bean');
   const deleteImageBtn = document.getElementById('btn-delete-modal-image');
   const modalFileInput = document.getElementById('modal-bean-image-input');
-  const modalBgToggle = document.getElementById('modal-toggle-bg-removal');
-const btnEnableEdit = document.getElementById('btn-enable-edit');
+
+  const btnEnableEdit = document.getElementById('btn-enable-edit');
   const btnCancelEdit = document.getElementById('btn-cancel-edit');
   const viewModeEl = document.getElementById('modal-view-mode');
 
-  // Klick auf Stift (✏️): In den Bearbeiten-Modus schalten
+  // Unter-Modals
+  const newPackModal = document.getElementById('new-pack-modal');
+  const newPackCloseBtn = document.getElementById('new-pack-close-btn');
+  const newPackForm = document.getElementById('new-pack-form');
+
+  const shotLogModal = document.getElementById('shot-log-modal');
+  const shotLogCloseBtn = document.getElementById('shot-log-close-btn');
+  const shotLogForm = document.getElementById('shot-log-form');
+
+  // --- GLOBALE KLICK-STEUERUNG (Event Delegation) ---
+  document.addEventListener('click', (e) => {
+    // 1. Klick auf "+ Neue Packung"
+    if (e.target.closest('#btn-open-new-pack-modal')) {
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('pack-roast-date-input');
+      if (dateInput) dateInput.value = today;
+      if (newPackModal) newPackModal.classList.remove('hidden');
+    }
+
+    // 2. Klick auf "⏱️ Neuen Bezug loggen"
+    if (e.target.closest('#btn-open-shot-logger')) {
+      const configId = document.getElementById('edit-config-id') ? document.getElementById('edit-config-id').value : null;
+      const item = userBeansData.find(b => b.id === configId);
+      
+      if (item) {
+        const grindInput = document.getElementById('log-grind-size');
+        if (grindInput) {
+          grindInput.value = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '';
+        }
+      }
+      if (shotLogModal) shotLogModal.classList.remove('hidden');
+    }
+  });
+
+  // Modus-Umschaltung Read-Only / Bearbeiten
   if (btnEnableEdit) {
     btnEnableEdit.addEventListener('click', () => {
       if (viewModeEl) viewModeEl.classList.add('hidden');
@@ -518,7 +552,6 @@ const btnEnableEdit = document.getElementById('btn-enable-edit');
     });
   }
 
-  // Klick auf Abbrechen: Zurück zur Read-Only Ansicht
   if (btnCancelEdit) {
     btnCancelEdit.addEventListener('click', () => {
       if (editForm) editForm.classList.add('hidden');
@@ -526,32 +559,72 @@ const btnEnableEdit = document.getElementById('btn-enable-edit');
       if (btnEnableEdit) btnEnableEdit.classList.remove('hidden');
     });
   }
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-  }
 
-  if (modalFileInput) {
-    modalFileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) {
-        modalProcessedImageFile = null;
-        return;
-      }
+  if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+  if (newPackCloseBtn && newPackModal) newPackCloseBtn.addEventListener('click', () => newPackModal.classList.add('hidden'));
+  if (shotLogCloseBtn && shotLogModal) shotLogCloseBtn.addEventListener('click', () => shotLogModal.classList.add('hidden'));
 
-      if (modalBgToggle && modalBgToggle.checked && window.imglyRemoveBackground) {
-        try {
-          const blob = await window.imglyRemoveBackground(file);
-          modalProcessedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
-        } catch (err) {
-          console.error('KI-Freistellen fehlgeschlagen:', err);
-          modalProcessedImageFile = file;
-        }
+  // Formular: Neue Packung speichern
+  if (newPackForm) {
+    newPackForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const configId = document.getElementById('edit-config-id').value;
+      const item = userBeansData.find(b => b.id === configId);
+      if (!item || !item.beans) return;
+
+      const packName = document.getElementById('pack-name-input').value.trim() || 'Neue Packung';
+      const roastDate = document.getElementById('pack-roast-date-input').value;
+
+      const result = await createBeanPack(item.beans.id, roastDate, packName);
+      if (result.success) {
+        alert('Neue Packung wurde erfolgreich aktiviert!');
+        newPackModal.classList.add('hidden');
+        newPackForm.reset();
+        openDetailModal(configId);
       } else {
-        modalProcessedImageFile = file;
+        alert('Fehler beim Anlegen der Packung: ' + result.error);
       }
     });
   }
 
+  // Formular: Bezug speichern
+  if (shotLogForm) {
+    shotLogForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const configId = document.getElementById('edit-config-id').value;
+      const item = userBeansData.find(b => b.id === configId);
+      if (!item || !item.beans) return;
+
+      const packsRes = await fetchPacksAndLogsForBean(item.beans.id);
+      if (!packsRes.success || !packsRes.data || packsRes.data.length === 0) {
+        alert('Bitte lege zuerst eine aktive Packung mit Röstdatum an!');
+        shotLogModal.classList.add('hidden');
+        if (newPackModal) newPackModal.classList.remove('hidden');
+        return;
+      }
+
+      const activePack = packsRes.data.find(p => p.is_active) || packsRes.data[packsRes.data.length - 1];
+
+      const grindSize = document.getElementById('log-grind-size').value;
+      const timeSec = document.getElementById('log-time-sec').value;
+      const notes = document.getElementById('log-notes').value;
+
+      const logRes = await saveShotLog(activePack.id, grindSize, timeSec, notes);
+
+      if (logRes.success) {
+        await updateUserBeanConfig(configId, { doubleGrind: grindSize });
+        alert('Bezug erfolgreich geloggt!');
+        shotLogModal.classList.add('hidden');
+        shotLogForm.reset();
+        await loadAndRenderBeans();
+        openDetailModal(configId);
+      } else {
+        alert('Fehler beim Speichern des Bezugs: ' + logRes.error);
+      }
+    });
+  }
+
+  // Foto löschen
   if (deleteImageBtn) {
     deleteImageBtn.addEventListener('click', async () => {
       const configId = document.getElementById('edit-config-id').value;
@@ -571,6 +644,7 @@ const btnEnableEdit = document.getElementById('btn-enable-edit');
     });
   }
 
+  // Edit Formular speichern
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -611,7 +685,7 @@ const btnEnableEdit = document.getElementById('btn-enable-edit');
         const masterPayload = { 
           tastingNotes: updatedTastingNotes,
           arabicaPercentage: updatedArabica,
-          websiteUrl: updatedWebsiteUrl // ⬅️ NEU
+          websiteUrl: updatedWebsiteUrl
         };
         if (newImageUrl !== undefined) {
           masterPayload.imageUrl = newImageUrl;
@@ -630,6 +704,7 @@ const btnEnableEdit = document.getElementById('btn-enable-edit');
     });
   }
 
+  // Bohne löschen
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
       const configId = document.getElementById('edit-config-id').value;
@@ -645,7 +720,6 @@ const btnEnableEdit = document.getElementById('btn-enable-edit');
     });
   }
 }
-
 /**
  * Öffnet das Modal und befüllt alle Felder
  */
