@@ -3,7 +3,7 @@
  */
 
 // Versionsnummer erhöhen, damit der Browser den alten Cache verwirft und neu lädt
-const CACHE_NAME = 'bohnenschmiede-v31';
+const CACHE_NAME = 'bohnenschmiede-v32';
 
 // Nur lokale App-Shell-Dateien & neue Icons zwischenspeichern
 const ASSETS_TO_CACHE = [
