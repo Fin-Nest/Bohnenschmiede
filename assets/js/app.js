@@ -1182,39 +1182,6 @@ function openDetailModal(configId) {
   modal.classList.remove('hidden');
 }
 
-/**
- * Berechnet die historische Trend-Analyse
- */
-function calculateHistoricalRecommendation(packsData) {
-  if (!packsData || packsData.length === 0) {
-    return 'Lege eine erste Packung an und logge Bezüge, um eine Mahlgrad-Analyse zu erhalten.';
-  }
-
-  let allShots = [];
-  packsData.forEach(pack => {
-    if (pack.shot_logs && Array.isArray(pack.shot_logs)) {
-      allShots = allShots.concat(pack.shot_logs);
-    }
-  });
-
-  if (allShots.length < 2) {
-    return 'Erfasse mindestens 2 Bezüge, um eine historische Trend-Analyse und Mahlgrad-Empfehlung zu berechnen.';
-  }
-
-  allShots.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-  const firstGrind = parseFloat(allShots[0].grind_size);
-  const latestGrind = parseFloat(allShots[allShots.length - 1].grind_size);
-  const diff = latestGrind - firstGrind;
-
-  if (Math.abs(diff) < 0.2) {
-    return `Der Mahlgrad ist über die letzten ${allShots.length} Bezüge konstant geblieben (~${latestGrind.toFixed(1)}). Die Extraktion verläuft stabil.`;
-  } else if (diff < 0) {
-    return `Trend: Der Mahlgrad wurde um ${Math.abs(diff).toFixed(1)} Stufen feiner gestellt (${firstGrind.toFixed(1)} → ${latestGrind.toFixed(1)}). Das entspricht dem typischen Entgasungsverhalten reifender Bohnen.`;
-  } else {
-    return `Trend: Der Mahlgrad wurde um ${diff.toFixed(1)} Stufen gröber gestellt (${firstGrind.toFixed(1)} → ${latestGrind.toFixed(1)}). Prüfe bei schnelleren Durchlaufzeiten Dosis und Tamping.`;
-  }
-}
 
 /**
  * Rendert die Verwaltungsliste aller Packungen und Bezüge
