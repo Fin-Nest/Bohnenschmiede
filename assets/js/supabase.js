@@ -459,104 +459,76 @@ function normalizeCSVHeaderKey(key) {
 }
 
 /**
- * Importiert Bohnen und Konfigurationen aus einer CSV-Datei mit robuster Key-Zuordnung
+ * Importiert Bohnen aus einer CSV-Datei mit erweiterter Spalten-Toleranz
+ * @param {string} csvText - Der rohe Textinhalt der CSV-Datei
  */
 async function importBeansFromCSV(csvText) {
   try {
-    const cleanText = csvText.replace(/^\uFEFF/, '');
-    const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length < 2) throw new Error('Die CSV-Datei ist leer oder enthält keine Datenzeilen.');
+    const lines = csvText.split(/\r\n|\n/).filter(line => line.trim() !== '');
+    if (lines.length < 2) {
+      return { success: false, error: 'Die CSV-Datei enthält keine Datenzeilen.' };
+    }
 
-    const delimiter = lines[0].includes(';') ? ';' : ',';
-    const rawHeaders = parseCSVLine(lines[0], delimiter);
+    // 1. Kopfzeile parsen & klein schreiben für flexible Zuordnung
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
 
-    let importedCount = 0;
-    const errors = [];
+    // Hilfsfunktion zur flexiblen Spaltensuche
+    const findIndex = (keywords) => {
+      return headers.findIndex(h => keywords.some(k => h.includes(k.toLowerCase())));
+    };
 
+    // Spalten-Indizes dynamisch ermitteln
+    const nameIdx = findIndex(['bohnenname', 'name', 'bean']);
+    const roasterIdx = findIndex(['röster', 'roaster']);
+    const roastIdx = findIndex(['röstgrad', 'roast']);
+    const statusIdx = findIndex(['status']);
+    const scoreIdx = findIndex(['bewertung', 'score']);
+
+    // Dial-In Parameter mit flexibler Schlagwort-Erkennung
+    const singleGrindIdx = findIndex(['single mahlgrad', 'single_grind', 'single grind']);
+    const singleYieldIdx = findIndex(['single yield', 'single_yield']);
+    const singleTimeIdx = findIndex(['single zeit', 'single time', 'single_time']);
+
+    const doubleGrindIdx = findIndex(['double mahlgrad', 'double_grind', 'double grind']);
+    const doubleYieldIdx = findIndex(['double yield', 'double_yield']);
+    const doubleTimeIdx = findIndex(['double zeit', 'double time', 'double_time']);
+
+    let successCount = 0;
+
+    // 2. Zeilen iterieren und Daten an Supabase senden
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line) continue;
+      const row = lines[i].split(',').map(cell => cell.trim().replace(/"/g, ''));
+      if (row.length === 0 || !row[nameIdx]) continue;
 
-      const values = parseCSVLine(line, delimiter).map(v => v.replace(/^"|"$/g, '').trim());
-      const row = {};
+      const rawRoast = roastIdx !== -1 ? row[roastIdx] : 'Medium';
+      // Röstgrad auf erste Großbuchstaben-Formatierung normieren (Light, Medium, Dark)
+      const normalizedRoast = rawRoast ? rawRoast.charAt(0).toUpperCase() + rawRoast.slice(1).toLowerCase() : 'Medium';
 
-      rawHeaders.forEach((header, idx) => {
-        const normKey = normalizeCSVHeaderKey(header);
-        row[normKey] = values[idx] || '';
-      });
+      const formData = {
+        name: row[nameIdx] || 'Unbekannte Bohne',
+        roaster: roasterIdx !== -1 ? row[roasterIdx] : 'Unbekannter Röster',
+        roastLevel: ['Light', 'Medium', 'Dark'].includes(normalizedRoast) ? normalizedRoast : 'Medium',
+        status: statusIdx !== -1 && row[statusIdx] ? row[statusIdx].toLowerCase() : 'inventory',
+        personalScore: scoreIdx !== -1 ? row[scoreIdx] : '',
 
-      // Flexible Suche nach Bohnennamen und Röster
-      const beanName = row['bohnenname'] || row['name'] || row['bohne'] || row['bean'];
-      const roaster = row['röster'] || row['roaster'] || row['roester'];
+        singleGrind: singleGrindIdx !== -1 ? row[singleGrindIdx] : '',
+        singleYield: singleYieldIdx !== -1 ? row[singleYieldIdx] : '',
+        singleTime: singleTimeIdx !== -1 ? row[singleTimeIdx] : '',
 
-      if (!beanName || !roaster) {
-        console.warn(`Zeile ${i + 1} übersprungen: Name oder Röster nicht gefunden.`, row);
-        continue;
-      }
-
-      const tastingNotesRaw = row['tastingnotes'] || row['geschmacksnoten'] || row['notes'] || '';
-      const tastingNotesArr = tastingNotesRaw 
-        ? tastingNotesRaw.split(/[,;]/).map(n => n.trim()).filter(n => n.length > 0)
-        : [];
-
-      // 1. Bohne in 'beans' speichern
-      const beanPayload = {
-        name: beanName,
-        roaster: roaster,
-        roast_level: row['röstgrad'] || row['roastlevel'] || 'Medium',
-        arabica_percentage: parseInt(row['arabica'] || row['arabicaprozent'] || '100', 10) || 100,
-        tasting_notes: tastingNotesArr,
-        website_url: row['website'] || row['link'] || null
+        doubleGrind: doubleGrindIdx !== -1 ? row[doubleGrindIdx] : '',
+        doubleYield: doubleYieldIdx !== -1 ? row[doubleYieldIdx] : '',
+        doubleTime: doubleTimeIdx !== -1 ? row[doubleTimeIdx] : ''
       };
 
-      const { data: beanData, error: beanErr } = await supabaseClient
-        .from('beans')
-        .insert([beanPayload])
-        .select()
-        .single();
-
-      if (beanErr) {
-        console.error(`Fehler beim Erstellen der Bohne "${beanName}":`, beanErr);
-        errors.push(`${beanName}: ${beanErr.message}`);
-        continue;
-      }
-
-      // 2. User Bean Config speichern
-      const statusVal = (row['status'] || '').toLowerCase();
-      const isWishlist = statusVal.includes('wunsch') || statusVal === 'wishlist';
-      const scoreVal = row['score'] || row['bewertung110'] || row['bewertung'];
-
-      const configPayload = {
-        bean_id: beanData.id,
-        status: isWishlist ? 'wishlist' : 'inventory',
-        personal_score: scoreVal ? parseFlexibleNumber(scoreVal) : null,
-        single_grind_size: row['singlemahlgrad'] ? parseFlexibleNumber(row['singlemahlgrad']) : null,
-        single_yield_out: (row['singleyieldg'] || row['singleyield']) ? parseFlexibleNumber(row['singleyieldg'] || row['singleyield']) : null,
-        single_time_sec: (row['singlezeits'] || row['singlezeit']) ? parseInt(row['singlezeits'] || row['singlezeit'], 10) : null,
-        double_grind_size: row['doublemahlgrad'] ? parseFlexibleNumber(row['doublemahlgrad']) : null,
-        double_yield_out: (row['doubleyieldg'] || row['doubleyield']) ? parseFlexibleNumber(row['doubleyieldg'] || row['doubleyield']) : null,
-        double_time_sec: (row['doublezeits'] || row['doublezeit']) ? parseInt(row['doublezeits'] || row['doublezeit'], 10) : null
-      };
-
-      const { error: configErr } = await supabaseClient
-        .from('user_bean_configs')
-        .insert([configPayload]);
-
-      if (configErr) {
-        console.error(`Fehler bei Konfiguration von "${beanName}":`, configErr);
-        errors.push(`${beanName} (Config): ${configErr.message}`);
-      } else {
-        importedCount++;
+      const res = await saveBeanToDatabase(formData);
+      if (res.success) {
+        successCount++;
       }
     }
 
-    if (importedCount === 0 && errors.length > 0) {
-      return { success: false, error: errors.join(' | ') };
-    }
-
-    return { success: true, count: importedCount };
-  } catch (error) {
-    console.error('Fehler beim CSV-Import:', error);
-    return { success: false, error: error.message };
+    return { success: true, count: successCount };
+  } catch (err) {
+    console.error('Fehler beim CSV-Import:', err);
+    return { success: false, error: err.message };
   }
 }
