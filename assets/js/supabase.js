@@ -524,3 +524,81 @@ async function importBeansFromCSV(csvText) {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Registriert einen neuen Nutzer und legt sein Profil an
+ */
+async function registerUserAccount(email, password, displayName) {
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) throw error;
+    if (!data.user) throw new Error('Registrierung fehlgeschlagen.');
+
+    // Profil in 'profiles'-Tabelle anlegen
+    const { error: profileErr } = await supabaseClient
+      .from('profiles')
+      .insert([{ id: data.user.id, display_name: displayName, role: 'user' }]);
+
+    if (profileErr) throw profileErr;
+
+    return { success: true, user: data.user };
+  } catch (err) {
+    console.error('Fehler bei Registrierung:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Meldet einen bestehenden Nutzer an
+ */
+async function loginUserAccount(email, password) {
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+    return { success: true, user: data.user };
+  } catch (err) {
+    console.error('Fehler beim Login:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Meldet den aktuellen Nutzer ab
+ */
+async function logoutUserAccount() {
+  await supabaseClient.auth.signOut();
+  window.location.reload();
+}
+
+/**
+ * Holt die aktuelle Sitzung inkl. Rollen-Profil aus der Datenbank
+ */
+async function getCurrentUserProfile() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return null;
+
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (error || !profile) {
+      return { id: session.user.id, email: session.user.email, display_name: session.user.email.split('@')[0], role: 'user' };
+    }
+
+    return { ...profile, email: session.user.email };
+  } catch (err) {
+    console.error('Fehler beim Abrufen des Profils:', err);
+    return null;
+  }
+}
