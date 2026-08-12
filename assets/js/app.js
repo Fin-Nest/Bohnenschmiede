@@ -1,5 +1,5 @@
 /**
- * BOHNENSCHMIEDE - MAIN APP CONTROLLER
+ * BOHNENSPEICHER - MAIN APP CONTROLLER
  */
 
 let userBeansData = [];
@@ -392,11 +392,11 @@ function renderInventoryBeans(inventoryList) {
                 <h4 class="text-sm font-bold text-slate-900 leading-tight hover:underline truncate">${escapeHtml(bean.name)}</h4>
               </div>
               
-             <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
-        title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
-        class="p-1 rounded hover:bg-slate-100 flex-shrink-0 ${item.is_pinned ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}">
-  <svg class="w-4 h-4" fill="${item.is_pinned ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/></svg>
-</button>
+              <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
+                      title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
+                      class="p-1 rounded hover:bg-slate-100 flex-shrink-0 ${item.is_pinned ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}">
+                <svg class="w-4 h-4" fill="${item.is_pinned ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/></svg>
+              </button>
             </div>
 
             <!-- Dynamisch farbige Badges -->
@@ -524,7 +524,7 @@ function initModalEvents() {
       if (newPackModal) newPackModal.classList.remove('hidden');
     }
 
-    // 2. Klick auf "⏱️ Neuen Bezug loggen"
+    // 2. Klick auf "Neuen Bezug loggen"
     if (e.target.closest('#btn-open-shot-logger')) {
       const configId = document.getElementById('edit-config-id') ? document.getElementById('edit-config-id').value : null;
       const item = userBeansData.find(b => b.id === configId);
@@ -752,7 +752,6 @@ function initModalEvents() {
   }
 
   // Edit Formular speichern
- // Edit Formular speichern
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -775,8 +774,6 @@ function initModalEvents() {
       const updatedTastingNotes = [...new Set([...modalSelectedTastingNotes, ...customNotesArray])];
       const updatedArabica = parseInt(document.getElementById('edit-arabica-slider').value, 10);
       const updatedWebsiteUrl = document.getElementById('edit-website') ? document.getElementById('edit-website').value.trim() : '';
-      
-      // ⬅️ NEU: Röstgrad aus dem Formular auslesen
       const updatedRoastLevel = document.getElementById('edit-roast') ? document.getElementById('edit-roast').value : 'Medium';
 
       const updatedData = {
@@ -797,7 +794,7 @@ function initModalEvents() {
           tastingNotes: updatedTastingNotes,
           arabicaPercentage: updatedArabica,
           websiteUrl: updatedWebsiteUrl,
-          roastLevel: updatedRoastLevel // ⬅️ NEU: An Supabase übergeben
+          roastLevel: updatedRoastLevel
         };
         if (newImageUrl !== undefined) {
           masterPayload.imageUrl = newImageUrl;
@@ -815,6 +812,7 @@ function initModalEvents() {
       }
     });
   }
+
   // Bohne löschen
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
@@ -842,10 +840,8 @@ function openDetailModal(configId) {
   const bean = item.beans || {};
   const modal = document.getElementById('detail-modal');
 
-  // Arabica-Wert direkt zu Beginn definieren
   const arabicaVal = (bean && bean.arabica_percentage !== undefined && bean.arabica_percentage !== null) ? bean.arabica_percentage : 100;
 
-  // Standardmäßig im Ansichtsmodus (Read-Only) starten
   const viewModeEl = document.getElementById('modal-view-mode');
   const editForm = document.getElementById('edit-bean-form');
   const btnEnableEdit = document.getElementById('btn-enable-edit');
@@ -892,7 +888,7 @@ function openDetailModal(configId) {
     if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // --- READ-ONLY ANSICHT BEFÜLLEN ---
+  // READ-ONLY ANSICHT BEFÜLLEN
   const viewStatus = document.getElementById('view-status-badge');
   if (viewStatus) {
     const isWishlist = item.status === 'wishlist';
@@ -901,7 +897,7 @@ function openDetailModal(configId) {
       : `<svg class="w-3.5 h-3.5 mr-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span>Im Bestand</span>`;
   }
 
-  // Röstgrad Badge mit dynamischen Farbklassen
+  // Röstgrad Badge
   const viewRoast = document.getElementById('view-roast-badge');
   if (viewRoast) {
     viewRoast.textContent = bean.roast_level || 'Medium';
@@ -912,7 +908,7 @@ function openDetailModal(configId) {
   const viewBlend = document.getElementById('view-blend-badge');
   if (viewBlend) viewBlend.textContent = formatBlendText(arabicaVal);
 
-  // Score Badge mit dynamischen Farbklassen
+  // Score Badge
   const viewScore = document.getElementById('view-score-badge');
   if (item.personal_score) {
     viewScore.textContent = `⭐ ${formatNumberDisplay(item.personal_score, 1)}`;
@@ -944,11 +940,10 @@ function openDetailModal(configId) {
   document.getElementById('view-double-grind').textContent = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '-';
   document.getElementById('view-double-details').textContent = `${formatNumberDisplay(item.double_yield_out)}g | ${formatNumberDisplay(item.double_time_sec, 0)}s`;
 
-  // --- EDIT-MODE FORMULAR-FELDER BEFÜLLEN ---
+  // EDIT-MODE FORMULAR-FELDER BEFÜLLEN
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
-  // ⬅️ NEU: Röstgrad-Auswahlfeld befüllen
   const editRoastInput = document.getElementById('edit-roast');
   if (editRoastInput) {
     editRoastInput.value = bean.roast_level || 'Medium';
@@ -996,7 +991,9 @@ function openDetailModal(configId) {
   if (item && item.beans) {
     fetchPacksAndLogsForBean(item.beans.id).then(res => {
       if (res.success && res.data) {
-        renderGrindChart('grind-chart', res.data);
+        if (typeof renderGrindChart === 'function') {
+          renderGrindChart('grind-chart', res.data);
+        }
         const recText = calculateHistoricalRecommendation(res.data);
         const recBox = document.getElementById('historical-recommendation-text');
         if (recBox) recBox.textContent = recText;
@@ -1007,6 +1004,42 @@ function openDetailModal(configId) {
   }
 
   modal.classList.remove('hidden');
+}
+
+/**
+ * Berechnet die historische Trend-Analyse aus allen erfassten Packungen und Bezügen
+ * @param {Array} packsData - Array der Packungen inklusive shot_logs
+ * @returns {string} - Formulierte Trend-Empfehlung
+ */
+function calculateHistoricalRecommendation(packsData) {
+  if (!packsData || packsData.length === 0) {
+    return 'Lege eine erste Packung an und logge Bezüge, um eine Mahlgrad-Analyse zu erhalten.';
+  }
+
+  let allShots = [];
+  packsData.forEach(pack => {
+    if (pack.shot_logs && Array.isArray(pack.shot_logs)) {
+      allShots = allShots.concat(pack.shot_logs);
+    }
+  });
+
+  if (allShots.length < 2) {
+    return 'Erfasse mindestens 2 Bezüge, um eine historische Trend-Analyse und Mahlgrad-Empfehlung zu berechnen.';
+  }
+
+  allShots.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  const firstGrind = parseFloat(allShots[0].grind_size);
+  const latestGrind = parseFloat(allShots[allShots.length - 1].grind_size);
+  const diff = latestGrind - firstGrind;
+
+  if (Math.abs(diff) < 0.2) {
+    return `Der Mahlgrad ist über die letzten ${allShots.length} Bezüge konstant geblieben (~${latestGrind.toFixed(1)}). Die Extraktion verläuft stabil.`;
+  } else if (diff < 0) {
+    return `Trend: Der Mahlgrad wurde um ${Math.abs(diff).toFixed(1)} Stufen feiner gestellt (${firstGrind.toFixed(1)} → ${latestGrind.toFixed(1)}). Das entspricht dem typischen Entgasungsverhalten reifender Bohnen.`;
+  } else {
+    return `Trend: Der Mahlgrad wurde um ${diff.toFixed(1)} Stufen gröber gestellt (${firstGrind.toFixed(1)} → ${latestGrind.toFixed(1)}). Prüfe bei schnelleren Durchlaufzeiten Dosis und Tamping.`;
+  }
 }
 
 /**
@@ -1039,9 +1072,13 @@ function renderPacksAndLogsHistory(packsData, configId) {
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <button onclick="openEditPackModal('${pack.id}', '${escapeHtml(pack.pack_name)}', '${pack.roast_date}')" 
-                    title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">✏️</button>
+                    title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </button>
             <button onclick="handleDeletePack('${pack.id}', '${configId}')" 
-                    title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">🗑️</button>
+                    title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
           </div>
         </div>
 
@@ -1059,14 +1096,14 @@ function renderPacksAndLogsHistory(packsData, configId) {
                     ${log.notes ? `<span class="text-slate-400 block truncate text-[10px]">${escapeHtml(log.notes)}</span>` : ''}
                   </div>
                   <div class="flex items-center gap-1 flex-shrink-0">
-                    <button onclick="openEditPackModal('${pack.id}', '${escapeHtml(pack.pack_name)}', '${pack.roast_date}')" 
-        title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
-  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-</button>
-                   <button onclick="handleDeletePack('${pack.id}', '${configId}')" 
-        title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
-  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-</button>
+                    <button onclick="openEditShotModal('${log.id}', '${log.grind_size}', '${log.time_sec}', '${escapeHtml(log.notes || '')}')" 
+                            title="Bezug bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </button>
+                    <button onclick="handleDeleteShot('${log.id}', '${configId}')" 
+                            title="Bezug löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
                   </div>
                 </div>
               `;
@@ -1190,7 +1227,7 @@ function initSetupTab() {
         const result = await importBeansFromCSV(text);
         
         importBtn.disabled = false;
-        importBtn.textContent = '📤 CSV-Datei importieren';
+        importBtn.textContent = 'CSV-Datei importieren';
 
         if (result.success) {
           alert(`${result.count} Bohnen erfolgreich importiert!`);
