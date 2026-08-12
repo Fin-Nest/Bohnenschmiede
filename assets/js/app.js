@@ -7,6 +7,8 @@ let processedImageFile = null;
 let selectedTastingNotes = [];
 let modalSelectedTastingNotes = [];
 let modalProcessedImageFile = null;
+let currentUserProfile = null;
+let isAuthRegisterMode = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
@@ -19,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initModalEvents();
   initSetupTab();
   registerServiceWorker();
-  loadAndRenderBeans();
+  await checkAuthSession();
 });
 
 /**
@@ -1397,5 +1399,146 @@ function initBlendSliderHandler() {
     editSlider.addEventListener('input', (e) => {
       editDisplay.textContent = formatBlendText(e.target.value);
     });
+  }
+}
+
+  // Auth-Sitzung prüfen
+  await checkAuthSession();
+});
+
+/**
+ * Prüft beim App-Start die bestehende Anmeldung
+ */
+async function checkAuthSession() {
+  currentUserProfile = await getCurrentUserProfile();
+
+  const authModal = document.getElementById('auth-modal');
+  if (!currentUserProfile) {
+    if (authModal) authModal.classList.remove('hidden');
+    initAuthModalEvents();
+  } else {
+    if (authModal) authModal.classList.add('hidden');
+    applyRolePermissions();
+    await loadAndRenderBeans();
+  }
+}
+
+/**
+ * Steuert Login / Registrierung Modal Umschaltung und Formular-Submit
+ */
+function initAuthModalEvents() {
+  const toggleBtn = document.getElementById('auth-toggle-mode-btn');
+  const modalTitle = document.getElementById('auth-modal-title');
+  const modalSub = document.getElementById('auth-modal-subtitle');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  const nameContainer = document.getElementById('auth-name-container');
+  const form = document.getElementById('auth-form');
+  const errorMsg = document.getElementById('auth-error-msg');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      isAuthRegisterMode = !isAuthRegisterMode;
+      if (errorMsg) errorMsg.classList.add('hidden');
+
+      if (isAuthRegisterMode) {
+        modalTitle.textContent = 'Konto erstellen';
+        modalSub.textContent = 'Erstelle deinen Zugang zum Bohnenspeicher';
+        submitBtn.textContent = 'Registrieren';
+        toggleBtn.textContent = 'Bereits ein Konto? Jetzt anmelden';
+        nameContainer.classList.remove('hidden');
+      } else {
+        modalTitle.textContent = 'Anmelden';
+        modalSub.textContent = 'Willkommen zurück im Bohnenspeicher!';
+        submitBtn.textContent = 'Anmelden';
+        toggleBtn.textContent = 'Noch kein Konto? Jetzt registrieren';
+        nameContainer.classList.add('hidden');
+      }
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorMsg) errorMsg.classList.add('hidden');
+
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const displayName = document.getElementById('auth-display-name').value.trim();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Bitte warten...';
+
+      let result;
+      if (isAuthRegisterMode) {
+        if (!displayName) {
+          showAuthError('Bitte gib deinen Rufnamen ein.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Registrieren';
+          return;
+        }
+        result = await registerUserAccount(email, password, displayName);
+      } else {
+        result = await loginUserAccount(email, password);
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = isAuthRegisterMode ? 'Registrieren' : 'Anmelden';
+
+      if (result.success) {
+        await checkAuthSession();
+      } else {
+        showAuthError(result.error);
+      }
+    });
+  }
+}
+
+function showAuthError(msg) {
+  const errorMsg = document.getElementById('auth-error-msg');
+  if (errorMsg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.remove('hidden');
+  }
+}
+
+/**
+ * wendet Frontend-Rechte basierend auf der Rolle (admin / user) an
+ */
+function applyRolePermissions() {
+  if (!currentUserProfile) return;
+
+  const isAdmin = currentUserProfile.role === 'admin';
+
+  // Profil-Info im Setup-Tab aktualisieren
+  const nameEl = document.getElementById('user-display-name');
+  const roleEl = document.getElementById('user-role-badge');
+  const logoutBtn = document.getElementById('btn-logout');
+
+  if (nameEl) nameEl.textContent = currentUserProfile.display_name;
+  if (roleEl) {
+    roleEl.textContent = isAdmin ? 'Admin' : 'Mitglied';
+    roleEl.className = isAdmin 
+      ? 'text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-amber-50 text-amber-800 border-amber-200 font-bold'
+      : 'text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-slate-100 text-slate-600 border-lab-border';
+  }
+
+  if (logoutBtn) logoutBtn.onclick = logoutUserAccount;
+
+  // CSV Import im Setup-Tab für Nicht-Admins ausblenden
+  const importSection = document.getElementById('csv-import-section');
+  if (importSection) {
+    if (isAdmin) importSection.classList.remove('hidden');
+    else importSection.classList.add('hidden');
+  }
+
+  // "Status: Im Bestand" Radio-Button im Formular "Neue Bohne" sperren
+  const addStatusInventory = document.querySelector('input[name="status"][value="inventory"]');
+  if (addStatusInventory) {
+    if (!isAdmin) {
+      addStatusInventory.disabled = true;
+      document.querySelector('input[name="status"][value="wishlist"]').checked = true;
+    } else {
+      addStatusInventory.disabled = false;
+    }
   }
 }
