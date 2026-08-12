@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Bohnenschmiede</title>
+  <title>Bohnenspeicher</title>
 
   <!-- APP ICONS & MANIFEST -->
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.json">
 
   <!-- PWA Meta Tags -->
@@ -78,7 +78,7 @@
   <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-lab-border px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <div class="w-3 h-3 bg-slate-900 rounded-full"></div>
-      <h1 class="text-lg font-bold tracking-tight uppercase">Bohnenschmiede</h1>
+      <h1 class="text-lg font-bold tracking-tight uppercase">Bohnenspeicher</h1>
     </div>
     <span class="text-xs font-mono px-2 py-1 bg-slate-100 border border-lab-border rounded text-slate-600">DF64 Dial-In</span>
   </header>
@@ -136,15 +136,17 @@
       
       <form id="add-bean-form" class="frosted-glass p-5 rounded-xl border border-lab-border space-y-5">
         
-        <!-- Status Switch -->
+        <!-- Status Switch mit SVG Icons -->
         <div class="flex bg-slate-100 p-1 rounded-lg border border-lab-border">
-          <label class="flex-1 text-center py-1.5 text-xs font-semibold rounded-md cursor-pointer transition has-[:checked]:bg-white has-[:checked]:shadow-sm">
+          <label class="flex-1 text-center py-1.5 text-xs font-semibold rounded-md cursor-pointer transition flex items-center justify-center gap-1.5 has-[:checked]:bg-white has-[:checked]:shadow-sm">
             <input type="radio" name="status" value="inventory" checked class="sr-only">
-            <span>📦 Im Bestand</span>
+            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <span>Im Bestand</span>
           </label>
-          <label class="flex-1 text-center py-1.5 text-xs font-semibold rounded-md cursor-pointer transition has-[:checked]:bg-white has-[:checked]:shadow-sm">
+          <label class="flex-1 text-center py-1.5 text-xs font-semibold rounded-md cursor-pointer transition flex items-center justify-center gap-1.5 has-[:checked]:bg-white has-[:checked]:shadow-sm">
             <input type="radio" name="status" value="wishlist" class="sr-only">
-            <span>📋 Wunschliste</span>
+            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <span>Wunschliste</span>
           </label>
         </div>
 
@@ -284,7 +286,7 @@
       <h2 class="text-xs uppercase tracking-widest font-semibold text-slate-500 font-mono">Setup & Datensicherung</h2>
       <div class="frosted-glass p-5 rounded-xl border border-lab-border space-y-5">
         
-       <!-- Export -->
+        <!-- Export -->
         <div class="space-y-2">
           <label class="block text-xs font-mono font-bold uppercase text-slate-700">Daten-Export</label>
           <button id="btn-export-csv" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2">
@@ -308,7 +310,7 @@
 
   </main>
 
-<!-- BOTTOM NAVIGATION BAR -->
+  <!-- BOTTOM NAVIGATION BAR -->
   <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-lab-border px-4 py-2">
     <div class="max-w-md mx-auto flex justify-between items-center text-xs font-medium text-slate-500">
       <button data-tab="dashboard" class="nav-btn active flex flex-col items-center gap-1 text-slate-900 font-semibold py-1 px-2">
@@ -354,9 +356,11 @@
 
         <div class="flex items-center gap-1 flex-shrink-0">
           <button id="btn-enable-edit" type="button" title="Bohne Bearbeiten" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-        </button>
-          <button id="modal-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-2">✕</button>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          </button>
+          <button id="modal-close-btn" type="button" title="Schließen" class="p-2 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
       </div>
 
@@ -365,8 +369,8 @@
         
         <!-- 1. BADGES (Status, Röstgrad, Blend, Rating) -->
         <div class="flex flex-wrap gap-1.5">
-          <span id="view-status-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-700 border border-lab-border font-semibold">
-            📦 Im Bestand
+          <span id="view-status-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-700 border border-lab-border font-semibold flex items-center">
+            Im Bestand
           </span>
           <span id="view-roast-badge" class="text-xs font-mono px-2 py-1 bg-slate-100 rounded text-slate-600 border border-lab-border">
             Medium
@@ -407,9 +411,9 @@
           <div class="flex justify-between items-center">
             <h3 class="text-xs font-mono font-bold uppercase text-slate-700">Mahlgrad-Drift (Historie)</h3>
             <button id="btn-open-new-pack-modal" type="button" class="text-[11px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1 rounded border border-lab-border transition font-semibold flex items-center gap-1">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"/></svg>
-          <span>Neue Packung</span>
-        </button>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"/></svg>
+              <span>Neue Packung</span>
+            </button>
           </div>
 
           <!-- Trend-Empfehlungsbox -->
@@ -427,9 +431,9 @@
 
           <!-- Button zum Loggen eines neuen Shots -->
           <button id="btn-open-shot-logger" type="button" class="w-full bg-slate-900 text-white font-mono text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span>Neuen Bezug loggen</span>
-        </button>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Neuen Bezug loggen</span>
+          </button>
         </div>
 
       </div>
@@ -442,8 +446,8 @@
           <div>
             <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Status</label>
             <select id="edit-status" class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono">
-              <option value="inventory">📦 Im Bestand</option>
-              <option value="wishlist">📋 Wunschliste</option>
+              <option value="inventory">Im Bestand</option>
+              <option value="wishlist">Wunschliste</option>
             </select>
           </div>
 
@@ -485,8 +489,9 @@
               </div>
               <span class="text-xs font-mono text-slate-600">Aktuelles Foto</span>
             </div>
-            <button type="button" id="btn-delete-modal-image" class="px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-mono font-semibold hover:bg-red-100 transition">
-              🗑️ Löschen
+            <button type="button" id="btn-delete-modal-image" class="px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-mono font-semibold hover:bg-red-100 transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <span>Löschen</span>
             </button>
           </div>
 
@@ -572,8 +577,10 @@
   <div id="new-pack-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="frosted-glass bg-white/95 max-w-sm w-full rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
       <div class="flex justify-between items-center border-b border-lab-border pb-3">
-        <h3 class="text-sm font-bold text-slate-900 font-mono">➕ Neue Packung anbrechen</h3>
-        <button id="new-pack-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-lg font-bold p-1">✕</button>
+        <h3 class="text-sm font-bold text-slate-900 font-mono">Neue Packung anbrechen</h3>
+        <button id="new-pack-close-btn" type="button" title="Schließen" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <form id="new-pack-form" class="space-y-3">
@@ -599,10 +606,12 @@
     <div class="frosted-glass bg-white/95 max-w-md w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
       <div class="flex justify-between items-center border-b border-lab-border pb-3">
         <div class="flex items-center gap-2">
-          <span class="text-base">⏱️</span>
+          <svg class="w-5 h-5 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <h3 class="text-base font-bold text-slate-900">Bezug loggen</h3>
         </div>
-        <button id="shot-log-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-1">✕</button>
+        <button id="shot-log-close-btn" type="button" title="Schließen" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <form id="shot-log-form" class="space-y-4">
@@ -633,8 +642,10 @@
   <div id="edit-shot-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="frosted-glass bg-white/95 max-w-sm w-full rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
       <div class="flex justify-between items-center border-b border-lab-border pb-3">
-        <h3 class="text-sm font-bold text-slate-900 font-mono">✏️ Bezug korrigieren</h3>
-        <button id="edit-shot-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-lg font-bold p-1">✕</button>
+        <h3 class="text-sm font-bold text-slate-900 font-mono">Bezug korrigieren</h3>
+        <button id="edit-shot-close-btn" type="button" title="Schließen" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <form id="edit-shot-form" class="space-y-3">
@@ -665,8 +676,10 @@
   <div id="edit-pack-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="frosted-glass bg-white/95 max-w-sm w-full rounded-2xl border border-lab-border shadow-2xl p-5 space-y-4">
       <div class="flex justify-between items-center border-b border-lab-border pb-3">
-        <h3 class="text-sm font-bold text-slate-900 font-mono">✏️ Packung bearbeiten</h3>
-        <button id="edit-pack-close-btn" type="button" class="text-slate-400 hover:text-slate-900 text-lg font-bold p-1">✕</button>
+        <h3 class="text-sm font-bold text-slate-900 font-mono">Packung bearbeiten</h3>
+        <button id="edit-pack-close-btn" type="button" title="Schließen" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <form id="edit-pack-form" class="space-y-3">
