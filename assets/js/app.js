@@ -62,47 +62,77 @@ function initTabNavigation() {
 }
 
 /**
- * Foto-Upload & Client-side KI-Hintergrundentfernung
+ * Foto-Upload & Client-side KI-Hintergrundentfernung (sowohl für neue Bohnen als auch im Edit-Modal)
  */
 function initImageUploadHandler() {
+  // 1. Upload beim Anlegen einer NEUEN Bohne
   const fileInput = document.getElementById('bean-image-input');
   const bgToggle = document.getElementById('toggle-bg-removal');
   const previewContainer = document.getElementById('image-preview-container');
   const previewImg = document.getElementById('image-preview');
   const spinner = document.getElementById('image-loading-spinner');
 
-  if (!fileInput) return;
-
-  fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      processedImageFile = null;
-      previewContainer.classList.add('hidden');
-      return;
-    }
-
-    previewContainer.classList.remove('hidden');
-
-    if (bgToggle.checked && window.imglyRemoveBackground) {
-      spinner.classList.remove('hidden');
-      try {
-        const blob = await window.imglyRemoveBackground(file);
-        processedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
-        previewImg.src = URL.createObjectURL(processedImageFile);
-      } catch (err) {
-        console.error('KI Freistellen fehlgeschlagen, nutze Originalbild:', err);
-        alert('KI-Hintergrundentfernung fehlgeschlagen. Es wird das Originalfoto verwendet.');
-        processedImageFile = file;
-        previewImg.src = URL.createObjectURL(file);
-      } finally {
-        spinner.classList.add('hidden');
+  if (fileInput) {
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        processedImageFile = null;
+        if (previewContainer) previewContainer.classList.add('hidden');
+        return;
       }
-    } else {
-      processedImageFile = file;
-      previewImg.src = URL.createObjectURL(file);
-    }
-  });
+
+      if (previewContainer) previewContainer.classList.remove('hidden');
+
+      if (bgToggle && bgToggle.checked && window.imglyRemoveBackground) {
+        if (spinner) spinner.classList.remove('hidden');
+        try {
+          const blob = await window.imglyRemoveBackground(file);
+          processedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
+          if (previewImg) previewImg.src = URL.createObjectURL(processedImageFile);
+        } catch (err) {
+          console.error('KI Freistellen fehlgeschlagen, nutze Originalbild:', err);
+          alert('KI-Hintergrundentfernung fehlgeschlagen. Es wird das Originalfoto verwendet.');
+          processedImageFile = file;
+          if (previewImg) previewImg.src = URL.createObjectURL(file);
+        } finally {
+          if (spinner) spinner.classList.add('hidden');
+        }
+      } else {
+        processedImageFile = file;
+        if (previewImg) previewImg.src = URL.createObjectURL(file);
+      }
+    });
+  }
+
+  // 2. Upload beim BEARBEITEN einer bestehenden Bohne im Modal
+  const modalFileInput = document.getElementById('modal-bean-image-input');
+  const modalBgToggle = document.getElementById('modal-toggle-bg-removal');
+
+  if (modalFileInput) {
+    modalFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        modalProcessedImageFile = null;
+        return;
+      }
+
+      // Prüfen, ob KI-Freistellung für das Modal aktiviert ist
+      if (modalBgToggle && modalBgToggle.checked && window.imglyRemoveBackground) {
+        try {
+          const blob = await window.imglyRemoveBackground(file);
+          modalProcessedImageFile = new File([blob], `nobg_${file.name}.png`, { type: 'image/png' });
+        } catch (err) {
+          console.error('KI Freistellen im Modal fehlgeschlagen, nutze Originalbild:', err);
+          alert('KI-Hintergrundentfernung fehlgeschlagen. Es wird das Originalfoto verwendet.');
+          modalProcessedImageFile = file;
+        }
+      } else {
+        modalProcessedImageFile = file;
+      }
+    });
+  }
 }
+
 
 /**
  * Live-Suche & Sortier-Event-Listener
