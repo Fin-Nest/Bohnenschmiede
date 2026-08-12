@@ -294,9 +294,9 @@ function renderPinnedBeans(pinnedList) {
                 <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">${escapeHtml(bean.roaster)}</span>
                 <h3 class="text-base font-bold text-slate-900 hover:underline leading-tight">${escapeHtml(bean.name)}</h3>
               </div>
-              <button onclick="handlePinToggle('${item.id}', false)" title="Entpinnen" class="text-base p-1 hover:opacity-75">
-                📌
-              </button>
+              <button onclick="handlePinToggle('${item.id}', false)" title="Entpinnen" class="p-1 text-slate-900 hover:opacity-75">
+  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/></svg>
+</button>
             </div>
 
             <!-- Dynamisch farbige Badges -->
@@ -389,11 +389,11 @@ function renderInventoryBeans(inventoryList) {
                 <h4 class="text-sm font-bold text-slate-900 leading-tight hover:underline truncate">${escapeHtml(bean.name)}</h4>
               </div>
               
-              <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
-                      title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
-                      class="text-xs p-1 rounded hover:bg-slate-100 flex-shrink-0 ${item.is_pinned ? 'opacity-100' : 'opacity-30 hover:opacity-100'}">
-                📌
-              </button>
+             <button onclick="handlePinToggle('${item.id}', ${!item.is_pinned})" 
+        title="${item.is_pinned ? 'Entpinnen' : 'Oben anpinnen'}"
+        class="p-1 rounded hover:bg-slate-100 flex-shrink-0 ${item.is_pinned ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}">
+  <svg class="w-4 h-4" fill="${item.is_pinned ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/></svg>
+</button>
             </div>
 
             <!-- Dynamisch farbige Badges -->
@@ -1051,10 +1051,14 @@ function renderPacksAndLogsHistory(packsData, configId) {
                     ${log.notes ? `<span class="text-slate-400 block truncate text-[10px]">${escapeHtml(log.notes)}</span>` : ''}
                   </div>
                   <div class="flex items-center gap-1 flex-shrink-0">
-                    <button onclick="openEditShotModal('${log.id}', '${log.grind_size}', '${log.time_sec}', '${escapeHtml(log.notes || '')}')" 
-                            title="Bezug korrigieren" class="p-1 hover:bg-slate-100 rounded text-slate-600">✏️</button>
-                    <button onclick="handleDeleteShot('${log.id}', '${configId}')" 
-                            title="Bezug löschen" class="p-1 hover:bg-red-50 rounded text-red-600">🗑️</button>
+                    <button onclick="openEditPackModal('${pack.id}', '${escapeHtml(pack.pack_name)}', '${pack.roast_date}')" 
+        title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+</button>
+                   <button onclick="handleDeletePack('${pack.id}', '${configId}')" 
+        title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
+  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+</button>
                   </div>
                 </div>
               `;
