@@ -606,7 +606,8 @@ function renderInventoryBeans(inventoryList) {
 }
 
 /**
- * Rendert Wunschlisten-Kacheln
+ * Rendert Wunschlisten-Kacheln inklusive Stift-Symbol zum Bearbeiten für Admins
+ * @param {Array} wishlistList - Liste der Bohnen mit Status 'wishlist'
  */
 function renderWishlistBeans(wishlistList) {
   const container = document.getElementById('wishlist-container');
@@ -628,22 +629,37 @@ function renderWishlistBeans(wishlistList) {
     return `
       <div class="frosted-glass p-4 rounded-xl border border-lab-border flex justify-between items-center gap-3">
         ${bean.image_url ? `
-          <div class="w-12 h-16 flex-shrink-0 bg-slate-100/50 rounded overflow-hidden flex items-center justify-center p-1">
+          <div onclick="openDetailModal('${item.id}')" class="w-12 h-16 flex-shrink-0 bg-slate-100/50 rounded overflow-hidden flex items-center justify-center p-1 cursor-pointer">
             <img src="${escapeHtml(bean.image_url)}" alt="${escapeHtml(bean.name)}" class="max-h-full max-w-full object-contain filter drop-shadow">
           </div>
         ` : ''}
-        <div class="flex-1">
-          <span class="text-[10px] font-mono uppercase text-slate-400 block">${escapeHtml(bean.roaster)}</span>
-          <h4 class="text-sm font-bold text-slate-900">${escapeHtml(bean.name)}</h4>
+        
+        <div onclick="openDetailModal('${item.id}')" class="flex-1 cursor-pointer min-w-0">
+          <span class="text-[10px] font-mono uppercase text-slate-400 block truncate">${escapeHtml(bean.roaster)}</span>
+          <h4 class="text-sm font-bold text-slate-900 truncate hover:underline">${escapeHtml(bean.name)}</h4>
           ${bean.profiles && bean.profiles.display_name ? `
             <span class="text-[9px] font-mono text-slate-400 block mt-0.5">Entdeckt von ${escapeHtml(bean.profiles.display_name)}</span>
           ` : ''}
         </div>
-        ${isAdmin ? `
-          <button onclick="moveToInventory('${item.id}')" class="bg-slate-900 text-white text-xs font-mono px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
-            In Bestand
-          </button>
-        ` : ''}
+
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          ${isAdmin ? `
+            <!-- Stift-Symbol für Admins zum Bearbeiten -->
+            <button onclick="openDetailModal('${item.id}')" 
+                    title="Bohne bearbeiten" 
+                    class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition border border-transparent hover:border-lab-border">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+              </svg>
+            </button>
+
+            <!-- Button zur Übernahme in den Bestand -->
+            <button onclick="moveToInventory('${item.id}')" 
+                    class="bg-slate-900 text-white text-xs font-mono px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
+              In Bestand
+            </button>
+          ` : ''}
+        </div>
       </div>
     `;
   }).join('');
