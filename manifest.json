@@ -1,6 +1,6 @@
 {
-  "name": "Bohnenschmiede",
-  "short_name": "Bohnenschmiede",
+  "name": "Bohnenspeicher",
+  "short_name": "Bohnenspeicher",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
