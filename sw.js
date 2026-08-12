@@ -2,7 +2,7 @@
  * BOHNENSPEICHER - SERVICE WORKER (OFFLINE CACHING)
  */
 
-const CACHE_NAME = 'bohnenschmiede-v46';
+const CACHE_NAME = 'bohnenschmiede-v47';
 
 const ASSETS_TO_CACHE = [
   './',
