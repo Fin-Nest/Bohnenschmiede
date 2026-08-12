@@ -891,7 +891,12 @@ function openDetailModal(configId) {
 
   // --- READ-ONLY ANSICHT BEFÜLLEN ---
   const viewStatus = document.getElementById('view-status-badge');
-  if (viewStatus) viewStatus.textContent = item.status === 'wishlist' ? '📋 Wunschliste' : '📦 Im Bestand';
+  if (viewStatus) {
+    const isWishlist = item.status === 'wishlist';
+    viewStatus.innerHTML = isWishlist
+      ? `<svg class="w-3.5 h-3.5 mr-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg><span>Wunschliste</span>`
+      : `<svg class="w-3.5 h-3.5 mr-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span>Im Bestand</span>`;
+  }
 
   // Röstgrad Badge mit dynamischen Farbklassen
   const viewRoast = document.getElementById('view-roast-badge');
