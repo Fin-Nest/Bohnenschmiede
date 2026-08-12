@@ -285,6 +285,20 @@
     <section id="tab-setup" class="hidden space-y-4">
       <h2 class="text-xs uppercase tracking-widest font-semibold text-slate-500 font-mono">Setup & Datensicherung</h2>
       <div class="frosted-glass p-5 rounded-xl border border-lab-border space-y-5">
+
+<!-- PROFIL & LOGOUT BEREICH IM SETUP TAB -->
+  <div class="frosted-glass p-4 rounded-xl border border-lab-border space-y-3 mb-4">
+    <div class="flex justify-between items-center">
+      <div>
+        <span class="text-[10px] font-mono text-slate-400 uppercase block">Angemeldet als</span>
+        <span id="user-display-name" class="text-sm font-bold text-slate-900 font-mono">-</span>
+        <span id="user-role-badge" class="text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-slate-100 text-slate-600 border-lab-border">User</span>
+      </div>
+      <button id="btn-logout" class="text-xs font-mono text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition">
+        Abmelden
+      </button>
+    </div>
+  </div>
         
         <!-- Export -->
         <div class="space-y-2">
@@ -718,5 +732,53 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/supabase.js"></script>
   <script src="assets/js/app.js"></script>
+
+  <!-- ========================================== -->
+  <!-- AUTH MODAL (LOGIN / REGISTRIERUNG)         -->
+  <!-- ========================================== -->
+  <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+    <div class="frosted-glass bg-white/95 rounded-2xl p-6 w-full max-w-md border border-lab-border shadow-xl space-y-4">
+      
+      <div class="text-center space-y-1">
+        <h2 id="auth-modal-title" class="text-xl font-bold text-slate-900">Anmelden</h2>
+        <p id="auth-modal-subtitle" class="text-xs font-mono text-slate-500">Willkommen zurück im Bohnenspeicher!</p>
+      </div>
+
+      <form id="auth-form" class="space-y-3">
+        <!-- Anzeigename (nur bei Registrierung sichtbar) -->
+        <div id="auth-name-container" class="hidden">
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Dein Name / Rufname *</label>
+          <input type="text" id="auth-display-name" placeholder="z. B. Martin"
+                 class="w-full bg-white border border-lab-border rounded-lg p-2.5 text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">E-Mail *</label>
+          <input type="email" id="auth-email" required placeholder="deine@email.de"
+                 class="w-full bg-white border border-lab-border rounded-lg p-2.5 text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Passwort *</label>
+          <input type="password" id="auth-password" required placeholder="••••••••"
+                 class="w-full bg-white border border-lab-border rounded-lg p-2.5 text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900">
+        </div>
+
+        <!-- Dynamische Fehler-/Erfolgsmeldung -->
+        <div id="auth-error-msg" class="hidden text-xs font-mono text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200"></div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full bg-slate-900 text-white font-mono text-xs font-bold py-3 rounded-lg hover:bg-slate-800 transition">
+          Anmelden
+        </button>
+      </form>
+
+      <div class="text-center pt-2 border-t border-lab-border/60">
+        <button id="auth-toggle-mode-btn" type="button" class="text-xs font-mono text-slate-600 hover:text-slate-900 underline">
+          Noch kein Konto? Jetzt registrieren
+        </button>
+      </div>
+
+    </div>
+  </div>
 </body>
 </html>
