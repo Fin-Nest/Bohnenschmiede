@@ -46,37 +46,12 @@ async function checkAuthSession() {
 }
 
 /**
- * Steuert Login / Registrierung Modal Umschaltung und Formular-Submit
+ * Steuert den Login im vereinfachten Home-Setup
  */
 function initAuthModalEvents() {
-  const toggleBtn = document.getElementById('auth-toggle-mode-btn');
-  const modalTitle = document.getElementById('auth-modal-title');
-  const modalSub = document.getElementById('auth-modal-subtitle');
-  const submitBtn = document.getElementById('auth-submit-btn');
-  const nameContainer = document.getElementById('auth-name-container');
   const form = document.getElementById('auth-form');
+  const submitBtn = document.getElementById('auth-submit-btn');
   const errorMsg = document.getElementById('auth-error-msg');
-
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      isAuthRegisterMode = !isAuthRegisterMode;
-      if (errorMsg) errorMsg.classList.add('hidden');
-
-      if (isAuthRegisterMode) {
-        modalTitle.textContent = 'Konto erstellen';
-        modalSub.textContent = 'Erstelle deinen Zugang zum Bohnenspeicher';
-        submitBtn.textContent = 'Registrieren';
-        toggleBtn.textContent = 'Bereits ein Konto? Jetzt anmelden';
-        nameContainer.classList.remove('hidden');
-      } else {
-        modalTitle.textContent = 'Anmelden';
-        modalSub.textContent = 'Willkommen zurück im Bohnenspeicher!';
-        submitBtn.textContent = 'Anmelden';
-        toggleBtn.textContent = 'Noch kein Konto? Jetzt registrieren';
-        nameContainer.classList.add('hidden');
-      }
-    });
-  }
 
   if (form) {
     form.addEventListener('submit', async (e) => {
@@ -85,36 +60,23 @@ function initAuthModalEvents() {
 
       const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value;
-      const displayName = document.getElementById('auth-display-name') ? document.getElementById('auth-display-name').value.trim() : '';
 
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Bitte warten...';
+      submitBtn.textContent = 'Anmelden...';
 
-      let result;
-      if (isAuthRegisterMode) {
-        if (!displayName) {
-          showAuthError('Bitte gib deinen Rufnamen ein.');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Registrieren';
-          return;
-        }
-        result = await registerUserAccount(email, password, displayName);
-      } else {
-        result = await loginUserAccount(email, password);
-      }
+      const result = await loginUserAccount(email, password);
 
       submitBtn.disabled = false;
-      submitBtn.textContent = isAuthRegisterMode ? 'Registrieren' : 'Anmelden';
+      submitBtn.textContent = 'Anmelden';
 
       if (result.success) {
         await checkAuthSession();
       } else {
-        showAuthError(result.error);
+        showAuthError('Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen.');
       }
     });
   }
 }
-
 function showAuthError(msg) {
   const errorMsg = document.getElementById('auth-error-msg');
   if (errorMsg) {
