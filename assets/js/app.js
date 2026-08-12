@@ -781,7 +781,7 @@ function initModalEvents() {
     });
   }
 
-  // Edit Formular speichern
+ // Edit Formular speichern (innerhalb von initModalEvents)
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -806,6 +806,10 @@ function initModalEvents() {
       const updatedWebsiteUrl = document.getElementById('edit-website') ? document.getElementById('edit-website').value.trim() : '';
       const updatedRoastLevel = document.getElementById('edit-roast') ? document.getElementById('edit-roast').value : 'Medium';
 
+      // NEU: Röster und Bohnenname auslesen
+      const updatedRoaster = document.getElementById('edit-roaster') ? document.getElementById('edit-roaster').value.trim() : '';
+      const updatedName = document.getElementById('edit-bean-name') ? document.getElementById('edit-bean-name').value.trim() : '';
+
       const updatedData = {
         status: document.getElementById('edit-status').value,
         personalScore: document.getElementById('edit-score').value,
@@ -820,7 +824,10 @@ function initModalEvents() {
       const result = await updateUserBeanConfig(configId, updatedData);
 
       if (result.success && item && item.beans) {
+        // NEU: roaster und name zum masterPayload hinzufügen
         const masterPayload = { 
+          roaster: updatedRoaster,
+          name: updatedName,
           tastingNotes: updatedTastingNotes,
           arabicaPercentage: updatedArabica,
           websiteUrl: updatedWebsiteUrl,
@@ -842,7 +849,6 @@ function initModalEvents() {
       }
     });
   }
-
   // Bohne löschen
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
@@ -888,6 +894,12 @@ function openDetailModal(configId) {
   document.getElementById('edit-config-id').value = item.id;
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
+
+  // Im Abschnitt: EDIT-MODE FORMULAR-FELDER BEFÜLLEN
+  const editRoasterInput = document.getElementById('edit-roaster');
+  const editNameInput = document.getElementById('edit-bean-name');
+  if (editRoasterInput) editRoasterInput.value = bean.roaster || '';
+  if (editNameInput) editNameInput.value = bean.name || '';
 
   // Website-Link Button
   const websiteContainer = document.getElementById('modal-website-container');
