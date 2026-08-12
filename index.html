@@ -442,6 +442,20 @@
       <form id="edit-bean-form" class="hidden space-y-4">
         <input type="hidden" id="edit-config-id">
 
+        <!-- NEU: STAMMDATEN BEARBEITEN (RÖSTER & BOHNENNAME) -->
+        <div class="space-y-3 pb-2 border-b border-lab-border">
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Röster *</label>
+            <input type="text" id="edit-roaster" required placeholder="z. B. Hoppenworth & Ploch" 
+                   class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900">
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Bohnen Name *</label>
+            <input type="text" id="edit-bean-name" required placeholder="z. B. Black Capera" 
+                   class="w-full bg-white border border-lab-border rounded-lg p-2 text-xs font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900">
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-[10px] font-mono text-slate-500 uppercase mb-1">Status</label>
