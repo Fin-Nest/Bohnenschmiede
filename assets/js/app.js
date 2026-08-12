@@ -269,8 +269,11 @@ function renderPinnedBeans(pinnedList) {
 
   if (pinnedList.length === 0) {
     container.innerHTML = `
-      <div class="frosted-glass p-4 rounded-xl border border-dashed border-slate-300 text-center py-6 text-slate-400 text-sm">
-        Keine aktive Bohne angepinnt. Klicke bei einer Bohne im Bestand auf 📌, um sie hier oben anzuheften.
+      <div class="frosted-glass p-4 rounded-xl border border-dashed border-slate-300 text-center py-6 text-slate-400 text-sm flex flex-col items-center gap-2">
+        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/>
+        </svg>
+        <span>Keine aktive Bohne angepinnt. Klicke bei einer Bohne im Bestand auf das Pin-Symbol, um sie hier oben anzuheften.</span>
       </div>
     `;
     return;
@@ -295,8 +298,8 @@ function renderPinnedBeans(pinnedList) {
                 <h3 class="text-base font-bold text-slate-900 hover:underline leading-tight">${escapeHtml(bean.name)}</h3>
               </div>
               <button onclick="handlePinToggle('${item.id}', false)" title="Entpinnen" class="p-1 text-slate-900 hover:opacity-75">
-  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/></svg>
-</button>
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4a1 1 0 00-1-1H9a1 1 0 00-1 1v8l-2 2v2h5v4l1 1 1-1v-4h5v-2l-2-2z"/></svg>
+              </button>
             </div>
 
             <!-- Dynamisch farbige Badges -->
