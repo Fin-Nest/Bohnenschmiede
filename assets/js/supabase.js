@@ -1,5 +1,5 @@
 /**
- * BOHNENSCHMIEDE - SUPABASE DATABASE CLIENT
+ * BOHNENSPEICHER - SUPABASE DATABASE CLIENT
  */
 
 // 1. Supabase Zugangsdaten als saubere Strings
@@ -8,6 +8,19 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Bsm5tsPl3xTvwEAYotW35A_ppzRwVd5
 
 // 2. Client-Initialisierung
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+/**
+ * HILFSFUNKTION: Wandelt Strings mit Komma oder Punkt sicher in Gleitkommazahlen um
+ * @param {string|number} val 
+ * @returns {number|null}
+ */
+function parseFlexibleNumber(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number') return val;
+  const normalized = String(val).replace(',', '.').trim();
+  const parsed = parseFloat(normalized);
+  return isNaN(parsed) ? null : parsed;
+}
 
 /**
  * Lädt ein Bild-File oder Blob in den Supabase Storage Bucket 'bean-images' hoch
@@ -53,6 +66,10 @@ async function saveBeanToDatabase(formData) {
       }
     }
 
+    // Aktuelle Nutzer-Sitzung für das Entdecker-Badge abrufen
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const currentUserId = session ? session.user.id : null;
+
     // A) In Tabelle 'beans' eintragen
     const { data: beanData, error: beanError } = await supabaseClient
       .from('beans')
@@ -63,7 +80,8 @@ async function saveBeanToDatabase(formData) {
         arabica_percentage: formData.arabicaPercentage !== undefined ? formData.arabicaPercentage : 100,
         tasting_notes: formData.tastingNotes || [],
         image_url: imageUrl,
-        website_url: formData.websiteUrl || null
+        website_url: formData.websiteUrl || null,
+        created_by: currentUserId // <-- Speichert die ID für das "Entdeckt von"-Badge
       }])
       .select()
       .single();
@@ -127,7 +145,8 @@ async function fetchUserBeans() {
           arabica_percentage,
           tasting_notes,
           image_url,
-          website_url
+          website_url,
+          profiles ( display_name )
         )
       `)
       .order('created_at', { ascending: false });
@@ -228,7 +247,6 @@ async function updateBeanMasterData(beanId, payload) {
   try {
     const updateData = {};
 
-    // Stammdaten für das Datenbank-Update mappen
     if (payload.roaster !== undefined) updateData.roaster = payload.roaster;
     if (payload.name !== undefined) updateData.name = payload.name;
     if (payload.tastingNotes !== undefined) updateData.tasting_notes = payload.tastingNotes;
@@ -416,43 +434,7 @@ async function updateBeanPackInDatabase(packId, updatedData) {
 }
 
 /**
- * Zerlegt eine CSV-Zeile präzise unter Berücksichtigung von Anführungszeichen
- */
-function parseCSVLine(text, delimiter) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (char === '"') {
-      if (inQuotes && text[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === delimiter && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-}
-
-/**
- * Normalisiert Header-Namen für flexiblen CSV-Match
- */
-function normalizeCSVHeaderKey(key) {
-  return String(key || '').toLowerCase().replace(/[^a-z0-9äöüß]/g, '');
-}
-
-/**
  * Importiert Bohnen aus einer CSV-Datei mit erweiterter Spalten-Toleranz
- * @param {string} csvText - Der rohe Textinhalt der CSV-Datei
  */
 async function importBeansFromCSV(csvText) {
   try {
@@ -461,22 +443,18 @@ async function importBeansFromCSV(csvText) {
       return { success: false, error: 'Die CSV-Datei enthält keine Datenzeilen.' };
     }
 
-    // 1. Kopfzeile parsen & klein schreiben für flexible Zuordnung
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
 
-    // Hilfsfunktion zur flexiblen Spaltensuche
     const findIndex = (keywords) => {
       return headers.findIndex(h => keywords.some(k => h.includes(k.toLowerCase())));
     };
 
-    // Spalten-Indizes dynamisch ermitteln
     const nameIdx = findIndex(['bohnenname', 'name', 'bean']);
     const roasterIdx = findIndex(['röster', 'roaster']);
     const roastIdx = findIndex(['röstgrad', 'roast']);
     const statusIdx = findIndex(['status']);
     const scoreIdx = findIndex(['bewertung', 'score']);
 
-    // Dial-In Parameter mit flexibler Schlagwort-Erkennung
     const singleGrindIdx = findIndex(['single mahlgrad', 'single_grind', 'single grind']);
     const singleYieldIdx = findIndex(['single yield', 'single_yield']);
     const singleTimeIdx = findIndex(['single zeit', 'single time', 'single_time']);
@@ -487,13 +465,11 @@ async function importBeansFromCSV(csvText) {
 
     let successCount = 0;
 
-    // 2. Zeilen iterieren und Daten an Supabase senden
     for (let i = 1; i < lines.length; i++) {
       const row = lines[i].split(',').map(cell => cell.trim().replace(/"/g, ''));
       if (row.length === 0 || !row[nameIdx]) continue;
 
       const rawRoast = roastIdx !== -1 ? row[roastIdx] : 'Medium';
-      // Röstgrad auf erste Großbuchstaben-Formatierung normieren (Light, Medium, Dark)
       const normalizedRoast = rawRoast ? rawRoast.charAt(0).toUpperCase() + rawRoast.slice(1).toLowerCase() : 'Medium';
 
       const formData = {
@@ -538,7 +514,6 @@ async function registerUserAccount(email, password, displayName) {
     if (error) throw error;
     if (!data.user) throw new Error('Registrierung fehlgeschlagen.');
 
-    // Profil in 'profiles'-Tabelle anlegen
     const { error: profileErr } = await supabaseClient
       .from('profiles')
       .insert([{ id: data.user.id, display_name: displayName, role: 'user' }]);
