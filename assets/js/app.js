@@ -7,10 +7,12 @@ let processedImageFile = null;
 let selectedTastingNotes = [];
 let modalSelectedTastingNotes = [];
 let modalProcessedImageFile = null;
+
+// Globale Variablen für Benutzerverwaltung
 let currentUserProfile = null;
 let isAuthRegisterMode = false;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTabNavigation();
   initAddBeanForm();
   initImageUploadHandler();
@@ -21,8 +23,155 @@ document.addEventListener('DOMContentLoaded', () => {
   initModalEvents();
   initSetupTab();
   registerServiceWorker();
+
+  // Sitzungsprüfung und App-Start ausführen
   await checkAuthSession();
 });
+
+/**
+ * Prüft beim App-Start die bestehende Anmeldung
+ */
+async function checkAuthSession() {
+  currentUserProfile = await getCurrentUserProfile();
+
+  const authModal = document.getElementById('auth-modal');
+  if (!currentUserProfile) {
+    if (authModal) authModal.classList.remove('hidden');
+    initAuthModalEvents();
+  } else {
+    if (authModal) authModal.classList.add('hidden');
+    applyRolePermissions();
+    await loadAndRenderBeans();
+  }
+}
+
+/**
+ * Steuert Login / Registrierung Modal Umschaltung und Formular-Submit
+ */
+function initAuthModalEvents() {
+  const toggleBtn = document.getElementById('auth-toggle-mode-btn');
+  const modalTitle = document.getElementById('auth-modal-title');
+  const modalSub = document.getElementById('auth-modal-subtitle');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  const nameContainer = document.getElementById('auth-name-container');
+  const form = document.getElementById('auth-form');
+  const errorMsg = document.getElementById('auth-error-msg');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      isAuthRegisterMode = !isAuthRegisterMode;
+      if (errorMsg) errorMsg.classList.add('hidden');
+
+      if (isAuthRegisterMode) {
+        modalTitle.textContent = 'Konto erstellen';
+        modalSub.textContent = 'Erstelle deinen Zugang zum Bohnenspeicher';
+        submitBtn.textContent = 'Registrieren';
+        toggleBtn.textContent = 'Bereits ein Konto? Jetzt anmelden';
+        nameContainer.classList.remove('hidden');
+      } else {
+        modalTitle.textContent = 'Anmelden';
+        modalSub.textContent = 'Willkommen zurück im Bohnenspeicher!';
+        submitBtn.textContent = 'Anmelden';
+        toggleBtn.textContent = 'Noch kein Konto? Jetzt registrieren';
+        nameContainer.classList.add('hidden');
+      }
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorMsg) errorMsg.classList.add('hidden');
+
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const displayName = document.getElementById('auth-display-name') ? document.getElementById('auth-display-name').value.trim() : '';
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Bitte warten...';
+
+      let result;
+      if (isAuthRegisterMode) {
+        if (!displayName) {
+          showAuthError('Bitte gib deinen Rufnamen ein.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Registrieren';
+          return;
+        }
+        result = await registerUserAccount(email, password, displayName);
+      } else {
+        result = await loginUserAccount(email, password);
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = isAuthRegisterMode ? 'Registrieren' : 'Anmelden';
+
+      if (result.success) {
+        await checkAuthSession();
+      } else {
+        showAuthError(result.error);
+      }
+    });
+  }
+}
+
+function showAuthError(msg) {
+  const errorMsg = document.getElementById('auth-error-msg');
+  if (errorMsg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.remove('hidden');
+  }
+}
+
+/**
+ * Wendet Frontend-Rechte basierend auf der Rolle (admin / user) an
+ */
+function applyRolePermissions() {
+  if (!currentUserProfile) return;
+
+  const isAdmin = currentUserProfile.role === 'admin';
+
+  // Profil-Info im Setup-Tab
+  const nameEl = document.getElementById('user-display-name');
+  const roleEl = document.getElementById('user-role-badge');
+  const logoutBtn = document.getElementById('btn-logout');
+
+  if (nameEl) nameEl.textContent = currentUserProfile.display_name;
+  if (roleEl) {
+    roleEl.textContent = isAdmin ? 'Admin' : 'Mitglied';
+    roleEl.className = isAdmin 
+      ? 'text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-amber-50 text-amber-800 border-amber-200 font-bold'
+      : 'text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-slate-100 text-slate-600 border-lab-border';
+  }
+
+  if (logoutBtn) logoutBtn.onclick = logoutUserAccount;
+
+  // CSV Import für Standard-User ausblenden
+  const importSection = document.getElementById('csv-import-section');
+  if (importSection) {
+    if (isAdmin) importSection.classList.remove('hidden');
+    else importSection.classList.add('hidden');
+  }
+
+  // Radio-Button "Im Bestand" beim Anlegen sperren (User dürfen nur auf Wunschliste setzen)
+  const addStatusInventory = document.querySelector('input[name="status"][value="inventory"]');
+  if (addStatusInventory) {
+    if (!isAdmin) {
+      addStatusInventory.disabled = true;
+      const wishlistRadio = document.querySelector('input[name="status"][value="wishlist"]');
+      if (wishlistRadio) wishlistRadio.checked = true;
+    } else {
+      addStatusInventory.disabled = false;
+    }
+  }
+
+  // Bearbeiten-Button im Detail-Modal für Standard-User verstecken
+  const btnEnableEdit = document.getElementById('btn-enable-edit');
+  if (btnEnableEdit) {
+    if (isAdmin) btnEnableEdit.classList.remove('hidden');
+    else btnEnableEdit.classList.add('hidden');
+  }
+}
 
 /**
  * Steuerung der Bottom Navigation Bar (Tabs)
@@ -64,10 +213,9 @@ function initTabNavigation() {
 }
 
 /**
- * Foto-Upload & Client-side KI-Hintergrundentfernung (sowohl für neue Bohnen als auch im Edit-Modal)
+ * Foto-Upload & KI-Hintergrundentfernung
  */
 function initImageUploadHandler() {
-  // 1. Upload beim Anlegen einer NEUEN Bohne
   const fileInput = document.getElementById('bean-image-input');
   const bgToggle = document.getElementById('toggle-bg-removal');
   const previewContainer = document.getElementById('image-preview-container');
@@ -106,7 +254,6 @@ function initImageUploadHandler() {
     });
   }
 
-  // 2. Upload beim BEARBEITEN einer bestehenden Bohne im Modal
   const modalFileInput = document.getElementById('modal-bean-image-input');
   const modalBgToggle = document.getElementById('modal-toggle-bg-removal');
 
@@ -118,7 +265,6 @@ function initImageUploadHandler() {
         return;
       }
 
-      // Prüfen, ob KI-Freistellung für das Modal aktiviert ist
       if (modalBgToggle && modalBgToggle.checked && window.imglyRemoveBackground) {
         try {
           const blob = await window.imglyRemoveBackground(file);
@@ -134,7 +280,6 @@ function initImageUploadHandler() {
     });
   }
 }
-
 
 /**
  * Live-Suche & Sortier-Event-Listener
@@ -218,9 +363,6 @@ function initAddBeanForm() {
   }
 }
 
-/**
- * Hilfsfunktion: Setzt das globale Tag-Array und die Optik der Tag-Buttons zurück
- */
 function resetTastingNotesUI() {
   selectedTastingNotes = [];
   const tagButtons = document.querySelectorAll('#tasting-tags-preset .tag-btn');
@@ -287,7 +429,7 @@ function filterAndRenderBeans() {
 }
 
 /**
- * Rendert Hero-Kacheln (Angepinnt) mit dynamischen Score- & Röstgrad-Badges
+ * Rendert Hero-Kacheln (Angepinnt)
  */
 function renderPinnedBeans(pinnedList) {
   const container = document.getElementById('pinned-beans-container');
@@ -349,6 +491,14 @@ function renderPinnedBeans(pinnedList) {
               ` : ''}
             </div>
 
+            <!-- Entdecker Badge -->
+            ${bean.profiles && bean.profiles.display_name ? `
+              <div class="flex items-center gap-1 text-[9px] font-mono text-slate-400 mt-1">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <span>Entdeckt von ${escapeHtml(bean.profiles.display_name)}</span>
+              </div>
+            ` : ''}
+
             <!-- Tasting Notes -->
             ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
               <div class="flex flex-wrap gap-1 mt-1.5">
@@ -389,7 +539,7 @@ function renderPinnedBeans(pinnedList) {
 }
 
 /**
- * Rendert Bestands-Kacheln mit dynamisch farbigen Badges
+ * Rendert Bestands-Kacheln
  */
 function renderInventoryBeans(inventoryList) {
   const container = document.getElementById('inventory-container');
@@ -431,7 +581,7 @@ function renderInventoryBeans(inventoryList) {
               </button>
             </div>
 
-            <!-- Dynamisch farbige Badges -->
+            <!-- Badges -->
             <div class="flex flex-wrap gap-1 mt-1.5">
               <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
                 ${escapeHtml(bean.roast_level || 'Medium')}
@@ -445,6 +595,14 @@ function renderInventoryBeans(inventoryList) {
                 </span>
               ` : ''}
             </div>
+
+            <!-- Entdecker Badge -->
+            ${bean.profiles && bean.profiles.display_name ? `
+              <div class="flex items-center gap-1 text-[9px] font-mono text-slate-400 mt-1">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <span>Entdeckt von ${escapeHtml(bean.profiles.display_name)}</span>
+              </div>
+            ` : ''}
 
             ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
               <div class="flex flex-wrap gap-1 mt-1.5">
@@ -501,6 +659,8 @@ function renderWishlistBeans(wishlistList) {
     return;
   }
 
+  const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
+
   container.innerHTML = wishlistList.map(item => {
     const bean = item.beans;
     return `
@@ -513,17 +673,22 @@ function renderWishlistBeans(wishlistList) {
         <div class="flex-1">
           <span class="text-[10px] font-mono uppercase text-slate-400 block">${escapeHtml(bean.roaster)}</span>
           <h4 class="text-sm font-bold text-slate-900">${escapeHtml(bean.name)}</h4>
+          ${bean.profiles && bean.profiles.display_name ? `
+            <span class="text-[9px] font-mono text-slate-400 block mt-0.5">Entdeckt von ${escapeHtml(bean.profiles.display_name)}</span>
+          ` : ''}
         </div>
-        <button onclick="moveToInventory('${item.id}')" class="bg-slate-900 text-white text-xs font-mono px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
-          In Bestand
-        </button>
+        ${isAdmin ? `
+          <button onclick="moveToInventory('${item.id}')" class="bg-slate-900 text-white text-xs font-mono px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
+            In Bestand
+          </button>
+        ` : ''}
       </div>
     `;
   }).join('');
 }
 
 /**
- * Registriert alle Klick- & Formular-Events im Detail-Modal sowie den Unter-Modals
+ * Registriert Event-Listener im Detail-Modal
  */
 function initModalEvents() {
   const modal = document.getElementById('detail-modal');
@@ -537,7 +702,6 @@ function initModalEvents() {
   const btnCancelEdit = document.getElementById('btn-cancel-edit');
   const viewModeEl = document.getElementById('modal-view-mode');
 
-  // Unter-Modals
   const newPackModal = document.getElementById('new-pack-modal');
   const newPackCloseBtn = document.getElementById('new-pack-close-btn');
   const newPackForm = document.getElementById('new-pack-form');
@@ -546,9 +710,7 @@ function initModalEvents() {
   const shotLogCloseBtn = document.getElementById('shot-log-close-btn');
   const shotLogForm = document.getElementById('shot-log-form');
 
-  // --- GLOBALE KLICK-STEUERUNG (Event Delegation) ---
   document.addEventListener('click', (e) => {
-    // 1. Klick auf "+ Neue Packung"
     if (e.target.closest('#btn-open-new-pack-modal')) {
       const today = new Date().toISOString().split('T')[0];
       const dateInput = document.getElementById('pack-roast-date-input');
@@ -556,7 +718,6 @@ function initModalEvents() {
       if (newPackModal) newPackModal.classList.remove('hidden');
     }
 
-    // 2. Klick auf "Neuen Bezug loggen"
     if (e.target.closest('#btn-open-shot-logger')) {
       const configId = document.getElementById('edit-config-id') ? document.getElementById('edit-config-id').value : null;
       const item = userBeansData.find(b => b.id === configId);
@@ -571,7 +732,6 @@ function initModalEvents() {
     }
   });
 
-  // SCORE STEPPER & VALIDIERUNG
   const scoreInput = document.getElementById('edit-score');
   const btnMinus = document.getElementById('btn-score-minus');
   const btnPlus = document.getElementById('btn-score-plus');
@@ -599,9 +759,7 @@ function initModalEvents() {
     }
   }
 
-  if (scoreInput) {
-    scoreInput.addEventListener('blur', validateAndAdjustScore);
-  }
+  if (scoreInput) scoreInput.addEventListener('blur', validateAndAdjustScore);
 
   if (btnMinus && scoreInput) {
     btnMinus.addEventListener('click', () => {
@@ -621,7 +779,6 @@ function initModalEvents() {
     });
   }
 
-  // Modus-Umschaltung Read-Only / Bearbeiten
   if (btnEnableEdit) {
     btnEnableEdit.addEventListener('click', () => {
       if (viewModeEl) viewModeEl.classList.add('hidden');
@@ -642,7 +799,6 @@ function initModalEvents() {
   if (newPackCloseBtn && newPackModal) newPackCloseBtn.addEventListener('click', () => newPackModal.classList.add('hidden'));
   if (shotLogCloseBtn && shotLogModal) shotLogCloseBtn.addEventListener('click', () => shotLogModal.classList.add('hidden'));
 
-  // Formular: Neue Packung speichern
   if (newPackForm) {
     newPackForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -665,7 +821,6 @@ function initModalEvents() {
     });
   }
 
-  // Formular: Bezug speichern
   if (shotLogForm) {
     shotLogForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -702,7 +857,6 @@ function initModalEvents() {
     });
   }
 
-  // Submit: Bezug bearbeiten
   const editShotForm = document.getElementById('edit-shot-form');
   const editShotModal = document.getElementById('edit-shot-modal');
   const editShotCloseBtn = document.getElementById('edit-shot-close-btn');
@@ -733,7 +887,6 @@ function initModalEvents() {
     });
   }
 
-  // Submit: Packung bearbeiten
   const editPackForm = document.getElementById('edit-pack-form');
   const editPackModal = document.getElementById('edit-pack-modal');
   const editPackCloseBtn = document.getElementById('edit-pack-close-btn');
@@ -763,7 +916,6 @@ function initModalEvents() {
     });
   }
 
-  // Foto löschen
   if (deleteImageBtn) {
     deleteImageBtn.addEventListener('click', async () => {
       const configId = document.getElementById('edit-config-id').value;
@@ -783,7 +935,6 @@ function initModalEvents() {
     });
   }
 
-// Edit Formular speichern (innerhalb von initModalEvents in app.js)
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -837,10 +988,8 @@ function initModalEvents() {
           masterPayload.imageUrl = newImageUrl;
         }
 
-        // 1. Supabase-Datenbank aktualisieren
         await updateBeanMasterData(item.beans.id, masterPayload);
 
-        // 2. Lokales Speicher-Objekt im Arbeitsspeicher sofort aktualisieren
         item.beans.roaster = updatedRoaster;
         item.beans.name = updatedName;
         item.beans.roast_level = updatedRoastLevel;
@@ -862,8 +1011,7 @@ function initModalEvents() {
       }
     });
   }
-  
-  // Bohne löschen
+
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
       const configId = document.getElementById('edit-config-id').value;
@@ -898,24 +1046,27 @@ function openDetailModal(configId) {
 
   if (viewModeEl) viewModeEl.classList.remove('hidden');
   if (editForm) editForm.classList.add('hidden');
-  if (btnEnableEdit) btnEnableEdit.classList.remove('hidden');
+
+  // Rollenabhängig: Bearbeiten-Button nur für Admins anzeigen
+  const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
+  if (btnEnableEdit) {
+    if (isAdmin) btnEnableEdit.classList.remove('hidden');
+    else btnEnableEdit.classList.add('hidden');
+  }
 
   modalProcessedImageFile = null;
   const modalFileInput = document.getElementById('modal-bean-image-input');
   if (modalFileInput) modalFileInput.value = '';
 
-  // Header & Stammdaten
   document.getElementById('edit-config-id').value = item.id;
   document.getElementById('modal-roaster').textContent = bean.roaster || '';
   document.getElementById('modal-bean-name').textContent = bean.name || '';
 
-  // Im Abschnitt: EDIT-MODE FORMULAR-FELDER BEFÜLLEN
   const editRoasterInput = document.getElementById('edit-roaster');
   const editNameInput = document.getElementById('edit-bean-name');
   if (editRoasterInput) editRoasterInput.value = bean.roaster || '';
   if (editNameInput) editNameInput.value = bean.name || '';
 
-  // Website-Link Button
   const websiteContainer = document.getElementById('modal-website-container');
   const websiteBtn = document.getElementById('modal-website-btn');
   const editWebsiteInput = document.getElementById('edit-website');
@@ -928,7 +1079,6 @@ function openDetailModal(configId) {
   }
   if (editWebsiteInput) editWebsiteInput.value = bean.website_url || '';
 
-  // Packungsfoto
   const previewBox = document.getElementById('modal-image-preview-box');
   const currentPreviewImg = document.getElementById('modal-image-current-preview');
   const headerImgContainer = document.getElementById('modal-image-container');
@@ -944,7 +1094,6 @@ function openDetailModal(configId) {
     if (headerImgContainer) headerImgContainer.classList.add('hidden');
   }
 
-  // READ-ONLY ANSICHT BEFÜLLEN
   const viewStatus = document.getElementById('view-status-badge');
   if (viewStatus) {
     const isWishlist = item.status === 'wishlist';
@@ -953,18 +1102,15 @@ function openDetailModal(configId) {
       : `<svg class="w-3.5 h-3.5 mr-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span>Im Bestand</span>`;
   }
 
-  // Röstgrad Badge
   const viewRoast = document.getElementById('view-roast-badge');
   if (viewRoast) {
     viewRoast.textContent = bean.roast_level || 'Medium';
     viewRoast.className = `text-xs font-mono px-2 py-1 rounded border ${getRoastBadgeClass(bean.roast_level)}`;
   }
 
-  // Blend Text
   const viewBlend = document.getElementById('view-blend-badge');
   if (viewBlend) viewBlend.textContent = formatBlendText(arabicaVal);
 
-  // Score Badge
   const viewScore = document.getElementById('view-score-badge');
   if (item.personal_score) {
     viewScore.textContent = `⭐ ${formatNumberDisplay(item.personal_score, 1)}`;
@@ -974,7 +1120,6 @@ function openDetailModal(configId) {
     viewScore.classList.add('hidden');
   }
 
-  // Tasting Notes
   const viewNotesList = document.getElementById('view-tasting-notes-list');
   if (viewNotesList) {
     if (bean.tasting_notes && bean.tasting_notes.length > 0) {
@@ -989,14 +1134,12 @@ function openDetailModal(configId) {
     }
   }
 
-  // Extraktions-Parameter
   document.getElementById('view-single-grind').textContent = item.single_grind_size ? formatNumberDisplay(item.single_grind_size, 1) : '-';
   document.getElementById('view-single-details').textContent = `${formatNumberDisplay(item.single_yield_out)}g | ${formatNumberDisplay(item.single_time_sec, 0)}s`;
 
   document.getElementById('view-double-grind').textContent = item.double_grind_size ? formatNumberDisplay(item.double_grind_size, 1) : '-';
   document.getElementById('view-double-details').textContent = `${formatNumberDisplay(item.double_yield_out)}g | ${formatNumberDisplay(item.double_time_sec, 0)}s`;
 
-  // EDIT-MODE FORMULAR-FELDER BEFÜLLEN
   document.getElementById('edit-status').value = item.status || 'inventory';
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
@@ -1043,7 +1186,6 @@ function openDetailModal(configId) {
   document.getElementById('edit-double-yield').value = item.double_yield_out ? formatNumberDisplay(item.double_yield_out, 1) : '';
   document.getElementById('edit-double-time').value = item.double_time_sec ? formatNumberDisplay(item.double_time_sec, 0) : '';
 
-  // Diagramm & Historie laden
   if (item && item.beans) {
     fetchPacksAndLogsForBean(item.beans.id).then(res => {
       if (res.success && res.data) {
@@ -1063,9 +1205,7 @@ function openDetailModal(configId) {
 }
 
 /**
- * Berechnet die historische Trend-Analyse aus allen erfassten Packungen und Bezügen
- * @param {Array} packsData - Array der Packungen inklusive shot_logs
- * @returns {string} - Formulierte Trend-Empfehlung
+ * Berechnet die historische Trend-Analyse
  */
 function calculateHistoricalRecommendation(packsData) {
   if (!packsData || packsData.length === 0) {
@@ -1099,7 +1239,7 @@ function calculateHistoricalRecommendation(packsData) {
 }
 
 /**
- * Rendert die Verwaltungsliste aller Packungen und Bezüge einer Bohne
+ * Rendert die Verwaltungsliste aller Packungen und Bezüge
  */
 function renderPacksAndLogsHistory(packsData, configId) {
   const container = document.getElementById('packs-history-list');
@@ -1114,6 +1254,8 @@ function renderPacksAndLogsHistory(packsData, configId) {
     return;
   }
 
+  const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
+
   container.innerHTML = packsData.map(pack => {
     const logs = (pack.shot_logs || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -1126,16 +1268,18 @@ function renderPacksAndLogsHistory(packsData, configId) {
             <span class="font-bold text-slate-900 block truncate">${escapeHtml(pack.pack_name)}</span>
             <span class="text-[10px] text-slate-500">Röstung: ${pack.roast_date} ${pack.is_active ? ' (Aktiv)' : ''}</span>
           </div>
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <button onclick="openEditPackModal('${pack.id}', '${escapeHtml(pack.pack_name)}', '${pack.roast_date}')" 
-                    title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-            </button>
-            <button onclick="handleDeletePack('${pack.id}', '${configId}')" 
-                    title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-          </div>
+          ${isAdmin ? `
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button onclick="openEditPackModal('${pack.id}', '${escapeHtml(pack.pack_name)}', '${pack.roast_date}')" 
+                      title="Packung bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              </button>
+              <button onclick="handleDeletePack('${pack.id}', '${configId}')" 
+                      title="Packung löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          ` : ''}
         </div>
 
         <!-- BEZÜGE EINER PACKUNG -->
@@ -1151,16 +1295,18 @@ function renderPacksAndLogsHistory(packsData, configId) {
                     <span>${log.time_sec}s</span>
                     ${log.notes ? `<span class="text-slate-400 block truncate text-[10px]">${escapeHtml(log.notes)}</span>` : ''}
                   </div>
-                  <div class="flex items-center gap-1 flex-shrink-0">
-                    <button onclick="openEditShotModal('${log.id}', '${log.grind_size}', '${log.time_sec}', '${escapeHtml(log.notes || '')}')" 
-                            title="Bezug bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                    </button>
-                    <button onclick="handleDeleteShot('${log.id}', '${configId}')" 
-                            title="Bezug löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                  </div>
+                  ${isAdmin ? `
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                      <button onclick="openEditShotModal('${log.id}', '${log.grind_size}', '${log.time_sec}', '${escapeHtml(log.notes || '')}')" 
+                              title="Bezug bearbeiten" class="p-1 hover:bg-slate-100 rounded text-slate-600">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      </button>
+                      <button onclick="handleDeleteShot('${log.id}', '${configId}')" 
+                              title="Bezug löschen" class="p-1 hover:bg-red-50 rounded text-red-600">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    </div>
+                  ` : ''}
                 </div>
               `;
             }).join('')}
@@ -1173,9 +1319,6 @@ function renderPacksAndLogsHistory(packsData, configId) {
   }).join('');
 }
 
-/**
- * Öffnet das Modal zum Bearbeiten eines Bezugs
- */
 function openEditShotModal(logId, grind, time, notes) {
   document.getElementById('edit-shot-id').value = logId;
   document.getElementById('edit-shot-grind').value = grind;
@@ -1184,9 +1327,6 @@ function openEditShotModal(logId, grind, time, notes) {
   document.getElementById('edit-shot-modal').classList.remove('hidden');
 }
 
-/**
- * Öffnet das Modal zum Bearbeiten einer Packung
- */
 function openEditPackModal(packId, name, roastDate) {
   document.getElementById('edit-pack-id').value = packId;
   document.getElementById('edit-pack-name').value = name;
@@ -1194,9 +1334,6 @@ function openEditPackModal(packId, name, roastDate) {
   document.getElementById('edit-pack-modal').classList.remove('hidden');
 }
 
-/**
- * Löscht einen Bezug nach Bestätigung
- */
 async function handleDeleteShot(logId, configId) {
   if (confirm('Möchtest du diesen Bezug wirklich löschen?')) {
     const res = await deleteShotLogFromDatabase(logId);
@@ -1208,9 +1345,6 @@ async function handleDeleteShot(logId, configId) {
   }
 }
 
-/**
- * Löscht eine Packung samt aller zugehörigen Bezüge nach Bestätigung
- */
 async function handleDeletePack(packId, configId) {
   if (confirm('Möchtest du diese Packung und ALLE darin enthaltenen Bezüge wirklich löschen?')) {
     const res = await deleteBeanPackFromDatabase(packId);
@@ -1222,9 +1356,6 @@ async function handleDeletePack(packId, configId) {
   }
 }
 
-/**
- * Verschiebt Bohne von der Wunschliste in den Bestand
- */
 async function moveToInventory(configId) {
   const result = await updateUserBeanConfig(configId, { status: 'inventory' });
   if (result.success) {
@@ -1232,9 +1363,6 @@ async function moveToInventory(configId) {
   }
 }
 
-/**
- * Toggle Pin-Status
- */
 async function handlePinToggle(configId, targetState) {
   const result = await togglePinStatus(configId, targetState);
   if (result.success) {
@@ -1244,9 +1372,6 @@ async function handlePinToggle(configId, targetState) {
   }
 }
 
-/**
- * XSS-Schutz
- */
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)
@@ -1298,9 +1423,6 @@ function initSetupTab() {
   }
 }
 
-/**
- * Registriert den Service Worker
- */
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -1315,9 +1437,6 @@ function registerServiceWorker() {
   }
 }
 
-/**
- * Tag-Buttons (Neue Bohne)
- */
 function initTastingNotesHandler() {
   const tagButtons = document.querySelectorAll('#tasting-tags-preset .tag-btn');
 
@@ -1338,9 +1457,6 @@ function initTastingNotesHandler() {
   });
 }
 
-/**
- * Tag-Buttons (Edit Modal)
- */
 function initModalTastingNotesHandler() {
   const tagButtons = document.querySelectorAll('#modal-tasting-tags-preset .modal-tag-btn');
 
@@ -1361,9 +1477,6 @@ function initModalTastingNotesHandler() {
   });
 }
 
-/**
- * Wandelt Arabica-% in lesbaren Text um
- */
 function formatBlendText(arabicaVal) {
   let arabica = parseInt(arabicaVal, 10);
   
@@ -1379,9 +1492,6 @@ function formatBlendText(arabicaVal) {
   return `${arabica}% Arabica / ${robusta}% Robusta`;
 }
 
-/**
- * Slider-Anzeige
- */
 function initBlendSliderHandler() {
   const addSlider = document.getElementById('bean-arabica-slider');
   const addDisplay = document.getElementById('bean-blend-display');
@@ -1399,146 +1509,5 @@ function initBlendSliderHandler() {
     editSlider.addEventListener('input', (e) => {
       editDisplay.textContent = formatBlendText(e.target.value);
     });
-  }
-}
-
-  // Auth-Sitzung prüfen
-  await checkAuthSession();
-});
-
-/**
- * Prüft beim App-Start die bestehende Anmeldung
- */
-async function checkAuthSession() {
-  currentUserProfile = await getCurrentUserProfile();
-
-  const authModal = document.getElementById('auth-modal');
-  if (!currentUserProfile) {
-    if (authModal) authModal.classList.remove('hidden');
-    initAuthModalEvents();
-  } else {
-    if (authModal) authModal.classList.add('hidden');
-    applyRolePermissions();
-    await loadAndRenderBeans();
-  }
-}
-
-/**
- * Steuert Login / Registrierung Modal Umschaltung und Formular-Submit
- */
-function initAuthModalEvents() {
-  const toggleBtn = document.getElementById('auth-toggle-mode-btn');
-  const modalTitle = document.getElementById('auth-modal-title');
-  const modalSub = document.getElementById('auth-modal-subtitle');
-  const submitBtn = document.getElementById('auth-submit-btn');
-  const nameContainer = document.getElementById('auth-name-container');
-  const form = document.getElementById('auth-form');
-  const errorMsg = document.getElementById('auth-error-msg');
-
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      isAuthRegisterMode = !isAuthRegisterMode;
-      if (errorMsg) errorMsg.classList.add('hidden');
-
-      if (isAuthRegisterMode) {
-        modalTitle.textContent = 'Konto erstellen';
-        modalSub.textContent = 'Erstelle deinen Zugang zum Bohnenspeicher';
-        submitBtn.textContent = 'Registrieren';
-        toggleBtn.textContent = 'Bereits ein Konto? Jetzt anmelden';
-        nameContainer.classList.remove('hidden');
-      } else {
-        modalTitle.textContent = 'Anmelden';
-        modalSub.textContent = 'Willkommen zurück im Bohnenspeicher!';
-        submitBtn.textContent = 'Anmelden';
-        toggleBtn.textContent = 'Noch kein Konto? Jetzt registrieren';
-        nameContainer.classList.add('hidden');
-      }
-    });
-  }
-
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (errorMsg) errorMsg.classList.add('hidden');
-
-      const email = document.getElementById('auth-email').value.trim();
-      const password = document.getElementById('auth-password').value;
-      const displayName = document.getElementById('auth-display-name').value.trim();
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Bitte warten...';
-
-      let result;
-      if (isAuthRegisterMode) {
-        if (!displayName) {
-          showAuthError('Bitte gib deinen Rufnamen ein.');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Registrieren';
-          return;
-        }
-        result = await registerUserAccount(email, password, displayName);
-      } else {
-        result = await loginUserAccount(email, password);
-      }
-
-      submitBtn.disabled = false;
-      submitBtn.textContent = isAuthRegisterMode ? 'Registrieren' : 'Anmelden';
-
-      if (result.success) {
-        await checkAuthSession();
-      } else {
-        showAuthError(result.error);
-      }
-    });
-  }
-}
-
-function showAuthError(msg) {
-  const errorMsg = document.getElementById('auth-error-msg');
-  if (errorMsg) {
-    errorMsg.textContent = msg;
-    errorMsg.classList.remove('hidden');
-  }
-}
-
-/**
- * wendet Frontend-Rechte basierend auf der Rolle (admin / user) an
- */
-function applyRolePermissions() {
-  if (!currentUserProfile) return;
-
-  const isAdmin = currentUserProfile.role === 'admin';
-
-  // Profil-Info im Setup-Tab aktualisieren
-  const nameEl = document.getElementById('user-display-name');
-  const roleEl = document.getElementById('user-role-badge');
-  const logoutBtn = document.getElementById('btn-logout');
-
-  if (nameEl) nameEl.textContent = currentUserProfile.display_name;
-  if (roleEl) {
-    roleEl.textContent = isAdmin ? 'Admin' : 'Mitglied';
-    roleEl.className = isAdmin 
-      ? 'text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-amber-50 text-amber-800 border-amber-200 font-bold'
-      : 'text-[9px] font-mono px-1.5 py-0.5 rounded ml-2 border bg-slate-100 text-slate-600 border-lab-border';
-  }
-
-  if (logoutBtn) logoutBtn.onclick = logoutUserAccount;
-
-  // CSV Import im Setup-Tab für Nicht-Admins ausblenden
-  const importSection = document.getElementById('csv-import-section');
-  if (importSection) {
-    if (isAdmin) importSection.classList.remove('hidden');
-    else importSection.classList.add('hidden');
-  }
-
-  // "Status: Im Bestand" Radio-Button im Formular "Neue Bohne" sperren
-  const addStatusInventory = document.querySelector('input[name="status"][value="inventory"]');
-  if (addStatusInventory) {
-    if (!isAdmin) {
-      addStatusInventory.disabled = true;
-      document.querySelector('input[name="status"][value="wishlist"]').checked = true;
-    } else {
-      addStatusInventory.disabled = false;
-    }
   }
 }
