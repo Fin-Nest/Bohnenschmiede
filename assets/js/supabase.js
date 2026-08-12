@@ -222,42 +222,34 @@ async function deleteUserBeanConfig(configId) {
 }
 
 /**
- * Aktualisiert die Stammdaten (Tasting Notes, Image URL, Mischung, Link & Röstgrad) einer Bohne
+ * Aktualisiert die Stammdaten einer Bohne in der Supabase 'beans'-Tabelle
  */
-async function updateBeanMasterData(beanId, masterData) {
+async function updateBeanMasterData(beanId, payload) {
   try {
-    const updatePayload = {};
-    
-    if (masterData.tastingNotes !== undefined) {
-      updatePayload.tasting_notes = masterData.tastingNotes;
-    }
-    if (masterData.imageUrl !== undefined) {
-      updatePayload.image_url = masterData.imageUrl;
-    }
-    if (masterData.arabicaPercentage !== undefined) {
-      updatePayload.arabica_percentage = masterData.arabicaPercentage;
-    }
-    if (masterData.websiteUrl !== undefined) {
-      updatePayload.website_url = masterData.websiteUrl || null;
-    }
-    // ⬅️ NEU: Röstgrad in das Update-Payload aufnehmen
-    if (masterData.roastLevel !== undefined) {
-      updatePayload.roast_level = masterData.roastLevel;
-    }
+    const updateData = {};
+
+    // Stammdaten für das Datenbank-Update mappen
+    if (payload.roaster !== undefined) updateData.roaster = payload.roaster;
+    if (payload.name !== undefined) updateData.name = payload.name;
+    if (payload.tastingNotes !== undefined) updateData.tasting_notes = payload.tastingNotes;
+    if (payload.arabicaPercentage !== undefined) updateData.arabica_percentage = payload.arabicaPercentage;
+    if (payload.websiteUrl !== undefined) updateData.website_url = payload.websiteUrl;
+    if (payload.roastLevel !== undefined) updateData.roast_level = payload.roastLevel;
+    if (payload.imageUrl !== undefined) updateData.image_url = payload.imageUrl;
 
     const { data, error } = await supabaseClient
       .from('beans')
-      .update(updatePayload)
-      .eq('id', beanId)
-      .select();
+      .update(updateData)
+      .eq('id', beanId);
 
     if (error) throw error;
-    return { success: true, data };
-  } catch (error) {
-    console.error('Fehler beim Aktualisieren der Bohnen-Stammdaten:', error);
-    return { success: false, error: error.message };
+    return { success: true };
+  } catch (err) {
+    console.error('Fehler beim Aktualisieren der Bohnen-Stammdaten:', err);
+    return { success: false, error: err.message };
   }
 }
+
 /**
  * Erstellt eine neue Packung für eine Bohne und setzt sie als aktiv
  */
