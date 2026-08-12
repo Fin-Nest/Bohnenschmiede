@@ -781,7 +781,7 @@ function initModalEvents() {
     });
   }
 
- // Edit Formular speichern (innerhalb von initModalEvents)
+// Edit Formular speichern (innerhalb von initModalEvents in app.js)
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -806,7 +806,6 @@ function initModalEvents() {
       const updatedWebsiteUrl = document.getElementById('edit-website') ? document.getElementById('edit-website').value.trim() : '';
       const updatedRoastLevel = document.getElementById('edit-roast') ? document.getElementById('edit-roast').value : 'Medium';
 
-      // NEU: Röster und Bohnenname auslesen
       const updatedRoaster = document.getElementById('edit-roaster') ? document.getElementById('edit-roaster').value.trim() : '';
       const updatedName = document.getElementById('edit-bean-name') ? document.getElementById('edit-bean-name').value.trim() : '';
 
@@ -824,7 +823,6 @@ function initModalEvents() {
       const result = await updateUserBeanConfig(configId, updatedData);
 
       if (result.success && item && item.beans) {
-        // NEU: roaster und name zum masterPayload hinzufügen
         const masterPayload = { 
           roaster: updatedRoaster,
           name: updatedName,
@@ -836,7 +834,20 @@ function initModalEvents() {
         if (newImageUrl !== undefined) {
           masterPayload.imageUrl = newImageUrl;
         }
+
+        // 1. Supabase-Datenbank aktualisieren
         await updateBeanMasterData(item.beans.id, masterPayload);
+
+        // 2. Lokales Speicher-Objekt im Arbeitsspeicher sofort aktualisieren
+        item.beans.roaster = updatedRoaster;
+        item.beans.name = updatedName;
+        item.beans.roast_level = updatedRoastLevel;
+        item.beans.arabica_percentage = updatedArabica;
+        item.beans.website_url = updatedWebsiteUrl;
+        item.beans.tasting_notes = updatedTastingNotes;
+        if (newImageUrl !== undefined) {
+          item.beans.image_url = newImageUrl;
+        }
       }
 
       if (result.success) {
@@ -849,6 +860,7 @@ function initModalEvents() {
       }
     });
   }
+  
   // Bohne löschen
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
