@@ -2,6 +2,7 @@
  * BOHNENSPEICHER - MAIN APP CONTROLLER
  */
 
+// Globale Anwendungszustände
 let userBeansData = [];
 let processedImageFile = null;
 let selectedTastingNotes = [];
@@ -10,7 +11,6 @@ let modalProcessedImageFile = null;
 
 // Globale Variablen für Benutzerverwaltung
 let currentUserProfile = null;
-let isAuthRegisterMode = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTabNavigation();
@@ -22,11 +22,61 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSearchAndFilter();
   initModalEvents();
   initSetupTab();
+  initHistoryHandler();
   registerServiceWorker();
 
-  // Sitzungsprüfung und App-Start ausführen
+  // Auth-Sitzung beim Start prüfen
   await checkAuthSession();
 });
+
+/**
+ * Steuert den Android-System-Zurück-Button über die HTML5 History API
+ */
+function initHistoryHandler() {
+  if (!history.state) {
+    history.replaceState({ view: 'dashboard' }, '');
+  }
+
+  window.addEventListener('popstate', (e) => {
+    const detailModal = document.getElementById('detail-modal');
+    const newPackModal = document.getElementById('new-pack-modal');
+    const shotLogModal = document.getElementById('shot-log-modal');
+    const editShotModal = document.getElementById('edit-shot-modal');
+    const editPackModal = document.getElementById('edit-pack-modal');
+
+    // 1. Unter-Modals schließen
+    if (newPackModal && !newPackModal.classList.contains('hidden')) {
+      newPackModal.classList.add('hidden');
+      return;
+    }
+    if (shotLogModal && !shotLogModal.classList.contains('hidden')) {
+      shotLogModal.classList.add('hidden');
+      return;
+    }
+    if (editShotModal && !editShotModal.classList.contains('hidden')) {
+      editShotModal.classList.add('hidden');
+      return;
+    }
+    if (editPackModal && !editPackModal.classList.contains('hidden')) {
+      editPackModal.classList.add('hidden');
+      return;
+    }
+
+    // 2. Haupt-Detail-Modal schließen
+    if (detailModal && !detailModal.classList.contains('hidden')) {
+      detailModal.classList.add('hidden');
+      return;
+    }
+
+    // 3. Wenn nicht im Dashboard: Zurück zum Dashboard wechseln
+    const dashboardTab = document.getElementById('tab-dashboard');
+    const isDashboardVisible = dashboardTab && !dashboardTab.classList.contains('hidden');
+
+    if (!isDashboardVisible) {
+      switchTabUI('dashboard');
+    }
+  });
+}
 
 /**
  * Prüft beim App-Start die bestehende Anmeldung
@@ -46,7 +96,7 @@ async function checkAuthSession() {
 }
 
 /**
- * Steuert den Login im vereinfachten Home-Setup
+ * Steuert die Formularübermittlung im Login-Modal
  */
 function initAuthModalEvents() {
   const form = document.getElementById('auth-form');
@@ -72,11 +122,12 @@ function initAuthModalEvents() {
       if (result.success) {
         await checkAuthSession();
       } else {
-        showAuthError('Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen.');
+        showAuthError('Anmeldung fehlgeschlagen. Bitte Zugangsdaten überprüfen.');
       }
     });
   }
 }
+
 function showAuthError(msg) {
   const errorMsg = document.getElementById('auth-error-msg');
   if (errorMsg) {
@@ -115,7 +166,7 @@ function applyRolePermissions() {
     else importSection.classList.add('hidden');
   }
 
-  // Radio-Button "Im Bestand" beim Anlegen sperren (User dürfen nur auf Wunschliste setzen)
+  // Radio-Button "Im Bestand" beim Anlegen sperren
   const addStatusInventory = document.querySelector('input[name="status"][value="inventory"]');
   if (addStatusInventory) {
     if (!isAdmin) {
@@ -140,6 +191,27 @@ function applyRolePermissions() {
  */
 function initTabNavigation() {
   const navButtons = document.querySelectorAll('.nav-btn');
+
+  navButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+      const targetTab = button.getAttribute('data-tab');
+
+      if (targetTab !== 'dashboard') {
+        history.pushState({ view: targetTab }, '');
+      } else {
+        history.pushState({ view: 'dashboard' }, '');
+      }
+
+      await switchTabUI(targetTab);
+    });
+  });
+}
+
+/**
+ * Schaltet die Tab-Sichtbarkeit in der Benutzeroberfläche um
+ */
+async function switchTabUI(targetTab) {
+  const navButtons = document.querySelectorAll('.nav-btn');
   const sections = {
     dashboard: document.getElementById('tab-dashboard'),
     wishlist: document.getElementById('tab-wishlist'),
@@ -147,31 +219,27 @@ function initTabNavigation() {
     setup: document.getElementById('tab-setup')
   };
 
-  navButtons.forEach(button => {
-    button.addEventListener('click', async () => {
-      const targetTab = button.getAttribute('data-tab');
-
-      Object.values(sections).forEach(section => {
-        if (section) section.classList.add('hidden');
-      });
-
-      if (sections[targetTab]) {
-        sections[targetTab].classList.remove('hidden');
-      }
-
-      navButtons.forEach(btn => {
-        btn.classList.remove('text-slate-900', 'font-semibold');
-        btn.classList.add('text-slate-500');
-      });
-
-      button.classList.remove('text-slate-500');
-      button.classList.add('text-slate-900', 'font-semibold');
-
-      if (targetTab === 'dashboard' || targetTab === 'wishlist') {
-        await loadAndRenderBeans();
-      }
-    });
+  Object.values(sections).forEach(section => {
+    if (section) section.classList.add('hidden');
   });
+
+  if (sections[targetTab]) {
+    sections[targetTab].classList.remove('hidden');
+  }
+
+  navButtons.forEach(btn => {
+    btn.classList.remove('text-slate-900', 'font-semibold');
+    btn.classList.add('text-slate-500');
+
+    if (btn.getAttribute('data-tab') === targetTab) {
+      btn.classList.remove('text-slate-500');
+      btn.classList.add('text-slate-900', 'font-semibold');
+    }
+  });
+
+  if (targetTab === 'dashboard' || targetTab === 'wishlist') {
+    await loadAndRenderBeans();
+  }
 }
 
 /**
@@ -244,18 +312,14 @@ function initImageUploadHandler() {
 }
 
 /**
- * Live-Suche & Sortier-Event-Listener
+ * Live-Suche & Sortierung
  */
 function initSearchAndFilter() {
   const searchInput = document.getElementById('search-input');
   const sortSelect = document.getElementById('sort-select');
 
-  if (searchInput) {
-    searchInput.addEventListener('input', () => filterAndRenderBeans());
-  }
-  if (sortSelect) {
-    sortSelect.addEventListener('change', () => filterAndRenderBeans());
-  }
+  if (searchInput) searchInput.addEventListener('input', () => filterAndRenderBeans());
+  if (sortSelect) sortSelect.addEventListener('change', () => filterAndRenderBeans());
 }
 
 /**
@@ -311,7 +375,9 @@ function initAddBeanForm() {
         processedImageFile = null;
         resetTastingNotesUI();
 
-        document.getElementById('image-preview-container').classList.add('hidden');
+        if (document.getElementById('image-preview-container')) {
+          document.getElementById('image-preview-container').classList.add('hidden');
+        }
         document.getElementById('bean-arabica-slider').value = 100;
         document.getElementById('bean-blend-display').textContent = '100% Arabica';
         if (document.getElementById('bean-website')) document.getElementById('bean-website').value = '';
@@ -335,7 +401,7 @@ function resetTastingNotesUI() {
 }
 
 /**
- * Lädt die Bohnen aus Supabase
+ * Lädt alle Bohnen aus Supabase
  */
 async function loadAndRenderBeans() {
   const response = await fetchUserBeans();
@@ -397,10 +463,7 @@ function renderPinnedBeans(pinnedList) {
   const container = document.getElementById('pinned-beans-container');
   const countDisplay = document.getElementById('pinned-count');
   
-  if (countDisplay) {
-    countDisplay.textContent = `${pinnedList.length}/3`;
-  }
-
+  if (countDisplay) countDisplay.textContent = `${pinnedList.length}/3`;
   if (!container) return;
 
   if (pinnedList.length === 0) {
@@ -419,7 +482,6 @@ function renderPinnedBeans(pinnedList) {
     const bean = item.beans;
     return `
       <div class="frosted-glass p-4 rounded-xl border border-slate-900 shadow-sm relative overflow-hidden flex flex-col justify-between">
-        
         <div class="flex gap-3 items-start">
           ${bean.image_url ? `
             <div class="w-16 h-20 flex-shrink-0 bg-slate-100/50 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-lab-border">
@@ -438,7 +500,6 @@ function renderPinnedBeans(pinnedList) {
               </button>
             </div>
 
-            <!-- Dynamisch farbige Badges -->
             <div class="flex flex-wrap gap-1 mt-1">
               <span class="text-[10px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
                 ${escapeHtml(bean.roast_level || 'Medium')}
@@ -453,7 +514,6 @@ function renderPinnedBeans(pinnedList) {
               ` : ''}
             </div>
 
-            <!-- Entdecker Badge -->
             ${bean.profiles && bean.profiles.display_name ? `
               <div class="flex items-center gap-1 text-[9px] font-mono text-slate-400 mt-1">
                 <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -461,7 +521,6 @@ function renderPinnedBeans(pinnedList) {
               </div>
             ` : ''}
 
-            <!-- Tasting Notes -->
             ${bean.tasting_notes && bean.tasting_notes.length > 0 ? `
               <div class="flex flex-wrap gap-1 mt-1.5">
                 ${bean.tasting_notes.map(note => `
@@ -520,7 +579,6 @@ function renderInventoryBeans(inventoryList) {
     const bean = item.beans;
     return `
       <div class="frosted-glass p-3.5 rounded-xl border border-lab-border flex flex-col justify-between space-y-3">
-        
         <div class="flex gap-3 items-start">
           ${bean.image_url ? `
             <div onclick="openDetailModal('${item.id}')" 
@@ -543,7 +601,6 @@ function renderInventoryBeans(inventoryList) {
               </button>
             </div>
 
-            <!-- Badges -->
             <div class="flex flex-wrap gap-1 mt-1.5">
               <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${getRoastBadgeClass(bean.roast_level)}">
                 ${escapeHtml(bean.roast_level || 'Medium')}
@@ -558,7 +615,6 @@ function renderInventoryBeans(inventoryList) {
               ` : ''}
             </div>
 
-            <!-- Entdecker Badge -->
             ${bean.profiles && bean.profiles.display_name ? `
               <div class="flex items-center gap-1 text-[9px] font-mono text-slate-400 mt-1">
                 <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -599,15 +655,13 @@ function renderInventoryBeans(inventoryList) {
             </div>
           </div>
         </div>
-
       </div>
     `;
   }).join('');
 }
 
 /**
- * Rendert Wunschlisten-Kacheln inklusive Stift-Symbol zum Bearbeiten für Admins
- * @param {Array} wishlistList - Liste der Bohnen mit Status 'wishlist'
+ * Rendert Wunschlisten-Kacheln mit Stift-Bearbeiten-Icon
  */
 function renderWishlistBeans(wishlistList) {
   const container = document.getElementById('wishlist-container');
@@ -644,7 +698,6 @@ function renderWishlistBeans(wishlistList) {
 
         <div class="flex items-center gap-1.5 flex-shrink-0">
           ${isAdmin ? `
-            <!-- Stift-Symbol für Admins zum Bearbeiten -->
             <button onclick="openDetailModal('${item.id}')" 
                     title="Bohne bearbeiten" 
                     class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition border border-transparent hover:border-lab-border">
@@ -653,7 +706,6 @@ function renderWishlistBeans(wishlistList) {
               </svg>
             </button>
 
-            <!-- Button zur Übernahme in den Bestand -->
             <button onclick="moveToInventory('${item.id}')" 
                     class="bg-slate-900 text-white text-xs font-mono px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
               In Bestand
@@ -666,7 +718,7 @@ function renderWishlistBeans(wishlistList) {
 }
 
 /**
- * Registriert Event-Listener im Detail-Modal
+ * Event-Listener im Detail-Modal
  */
 function initModalEvents() {
   const modal = document.getElementById('detail-modal');
@@ -1007,7 +1059,7 @@ function initModalEvents() {
 }
 
 /**
- * Öffnet das Modal im Read-Only Ansichtsmodus und befüllt alle Felder
+ * Öffnet das Detail-Modal und befüllt alle Daten
  */
 function openDetailModal(configId) {
   const item = userBeansData.find(b => b.id === configId);
@@ -1025,7 +1077,6 @@ function openDetailModal(configId) {
   if (viewModeEl) viewModeEl.classList.remove('hidden');
   if (editForm) editForm.classList.add('hidden');
 
-  // Rollenabhängig: Bearbeiten-Button nur für Admins anzeigen
   const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
   if (btnEnableEdit) {
     if (isAdmin) btnEnableEdit.classList.remove('hidden');
@@ -1122,9 +1173,7 @@ function openDetailModal(configId) {
   document.getElementById('edit-score').value = item.personal_score ? formatNumberDisplay(item.personal_score, 1) : '';
 
   const editRoastInput = document.getElementById('edit-roast');
-  if (editRoastInput) {
-    editRoastInput.value = bean.roast_level || 'Medium';
-  }
+  if (editRoastInput) editRoastInput.value = bean.roast_level || 'Medium';
 
   const editSlider = document.getElementById('edit-arabica-slider');
   const editDisplay = document.getElementById('edit-blend-display');
@@ -1179,12 +1228,47 @@ function openDetailModal(configId) {
     });
   }
 
+  // History State für Modal setzen
+  history.pushState({ view: 'modal', id: configId }, '');
   modal.classList.remove('hidden');
 }
 
+/**
+ * Berechnet die historische Trend-Analyse
+ */
+function calculateHistoricalRecommendation(packsData) {
+  if (!packsData || packsData.length === 0) {
+    return 'Lege eine erste Packung an und logge Bezüge, um eine Mahlgrad-Analyse zu erhalten.';
+  }
+
+  let allShots = [];
+  packsData.forEach(pack => {
+    if (pack.shot_logs && Array.isArray(pack.shot_logs)) {
+      allShots = allShots.concat(pack.shot_logs);
+    }
+  });
+
+  if (allShots.length < 2) {
+    return 'Erfasse mindestens 2 Bezüge, um eine historische Trend-Analyse und Mahlgrad-Empfehlung zu berechnen.';
+  }
+
+  allShots.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  const firstGrind = parseFloat(allShots[0].grind_size);
+  const latestGrind = parseFloat(allShots[allShots.length - 1].grind_size);
+  const diff = latestGrind - firstGrind;
+
+  if (Math.abs(diff) < 0.2) {
+    return `Der Mahlgrad ist über die letzten ${allShots.length} Bezüge konstant geblieben (~${latestGrind.toFixed(1)}). Die Extraktion verläuft stabil.`;
+  } else if (diff < 0) {
+    return `Trend: Der Mahlgrad wurde um ${Math.abs(diff).toFixed(1)} Stufen feiner gestellt (${firstGrind.toFixed(1)} → ${latestGrind.toFixed(1)}). Das entspricht dem typischen Entgasungsverhalten reifender Bohnen.`;
+  } else {
+    return `Trend: Der Mahlgrad wurde um ${diff.toFixed(1)} Stufen gröber gestellt (${diff.toFixed(1)}). Prüfe bei schnelleren Durchlaufzeiten Dosis und Tamping.`;
+  }
+}
 
 /**
- * Rendert die Verwaltungsliste aller Packungen und Bezüge
+ * Rendert die Packungs- & Bezugshistorie
  */
 function renderPacksAndLogsHistory(packsData, configId) {
   const container = document.getElementById('packs-history-list');
@@ -1206,8 +1290,6 @@ function renderPacksAndLogsHistory(packsData, configId) {
 
     return `
       <div class="bg-slate-50/90 p-2.5 rounded-lg border border-lab-border space-y-2 text-xs font-mono">
-        
-        <!-- PACKUNG HEADER -->
         <div class="flex justify-between items-center bg-white p-1.5 rounded border border-lab-border/80">
           <div class="min-w-0 flex-1">
             <span class="font-bold text-slate-900 block truncate">${escapeHtml(pack.pack_name)}</span>
@@ -1227,7 +1309,6 @@ function renderPacksAndLogsHistory(packsData, configId) {
           ` : ''}
         </div>
 
-        <!-- BEZÜGE EINER PACKUNG -->
         ${logs.length > 0 ? `
           <div class="pl-2 space-y-1 border-l-2 border-slate-300">
             ${logs.map(log => {
@@ -1282,49 +1363,28 @@ function openEditPackModal(packId, name, roastDate) {
 async function handleDeleteShot(logId, configId) {
   if (confirm('Möchtest du diesen Bezug wirklich löschen?')) {
     const res = await deleteShotLogFromDatabase(logId);
-    if (res.success) {
-      openDetailModal(configId);
-    } else {
-      alert('Fehler beim Löschen: ' + res.error);
-    }
+    if (res.success) openDetailModal(configId);
+    else alert('Fehler beim Löschen: ' + res.error);
   }
 }
 
 async function handleDeletePack(packId, configId) {
   if (confirm('Möchtest du diese Packung und ALLE darin enthaltenen Bezüge wirklich löschen?')) {
     const res = await deleteBeanPackFromDatabase(packId);
-    if (res.success) {
-      openDetailModal(configId);
-    } else {
-      alert('Fehler beim Löschen der Packung: ' + res.error);
-    }
+    if (res.success) openDetailModal(configId);
+    else alert('Fehler beim Löschen der Packung: ' + res.error);
   }
 }
 
 async function moveToInventory(configId) {
   const result = await updateUserBeanConfig(configId, { status: 'inventory' });
-  if (result.success) {
-    loadAndRenderBeans();
-  }
+  if (result.success) loadAndRenderBeans();
 }
 
 async function handlePinToggle(configId, targetState) {
   const result = await togglePinStatus(configId, targetState);
-  if (result.success) {
-    loadAndRenderBeans();
-  } else {
-    alert(result.error);
-  }
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  if (result.success) loadAndRenderBeans();
+  else alert(result.error);
 }
 
 function initSetupTab() {
@@ -1424,10 +1484,7 @@ function initModalTastingNotesHandler() {
 
 function formatBlendText(arabicaVal) {
   let arabica = parseInt(arabicaVal, 10);
-  
-  if (isNaN(arabica)) {
-    arabica = 100;
-  }
+  if (isNaN(arabica)) arabica = 100;
 
   arabica = Math.max(0, Math.min(100, arabica));
   const robusta = 100 - arabica;
@@ -1455,4 +1512,45 @@ function initBlendSliderHandler() {
       editDisplay.textContent = formatBlendText(e.target.value);
     });
   }
+}
+
+// Global verfügbare Hilfsfunktionen
+function getRoastBadgeClass(level) {
+  const l = (level || 'medium').toLowerCase();
+  if (l === 'light') return 'bg-amber-100 text-amber-900 border-amber-300';
+  if (l === 'dark') return 'bg-stone-200 text-stone-900 border-stone-400';
+  return 'bg-amber-50 text-amber-800 border-amber-200';
+}
+
+function getScoreBadgeClass(score) {
+  const num = parseFloat(score);
+  if (isNaN(num)) return 'bg-slate-100 text-slate-700 border-slate-300';
+  if (num >= 8.5) return 'bg-emerald-50 text-emerald-800 border-emerald-300';
+  if (num >= 7.0) return 'bg-blue-50 text-blue-800 border-blue-300';
+  return 'bg-slate-100 text-slate-700 border-slate-300';
+}
+
+function formatNumberDisplay(val, decimals = 1) {
+  if (val === null || val === undefined || val === '') return '-';
+  const num = parseFloat(String(val).replace(',', '.'));
+  if (isNaN(num)) return '-';
+  return num.toFixed(decimals).replace('.', ',');
+}
+
+function calculateDaysSinceRoast(roastDateStr, logDateStr) {
+  if (!roastDateStr) return '?';
+  const roast = new Date(roastDateStr);
+  const log = logDateStr ? new Date(logDateStr) : new Date();
+  const diffTime = Math.abs(log - roast);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
